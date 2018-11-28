@@ -1,17 +1,22 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"flag"
 	"log"
+	"net/http"
+	"os"
 
-	"github.com/albertsen/lw-processengine/cmd/common"
-	"github.com/albertsen/lw-processengine/pkg/msg"
-	"github.com/albertsen/lw-processengine/pkg/process"
+	"github.com/albertsen/lessworkflow/pkg/msg"
+	"github.com/albertsen/lessworkflow/pkg/process"
 )
 
 var (
-	url, topic, help      = common.Flags()
-	processDefinitionFile = flag.String("p", "", "Process definition file. Will be read from stdin if ommitted.")
+	url         = flag.String("s", "nats://localhost:4222", "URL of messaging server.")
+	topic       = flag.String("t", "actions", "Message topic.")
+	processFile = flag.String("p", "", "Process descriptor file. Mandatory.")
+	help        = flag.Bool("h", false, "This message.")
 )
 
 type Action struct {
@@ -20,14 +25,14 @@ type Action struct {
 }
 
 func main() {
-	common.ParseFlags(help)
-	json, err := common.ReadFileOrStdin(*processDefinitionFile)
-	if err != nil {
-		log.Fatalf("Error reading process definition file: %s", err)
+	flag.Parse()
+	if *help || *processFile == "" {
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
-	process, err := process.Parse(json)
+	process, err := process.ParseFile(*processFile)
 	if err != nil {
-		log.Fatalf("Error parsing process definition: %s", err)
+		log.Fatalf("Error reading process definition: %s", err)
 	}
 	con := msg.Connect(*url)
 	defer con.Close()
@@ -43,10 +48,17 @@ func main() {
 }
 
 func performAction(Process *process.Process, Action *Action) {
-	log.Printf("Action name: %s", Action.Name)
-	log.Printf("Action payload: %s", Action.Payload)
 	actionDesc := Process.Workflow[Action.Name]
-	log.Printf("Action handler: %s", actionDesc.Handler)
 	handlerURL := Process.Handlers[actionDesc.Handler].URL
-	log.Printf("Action handler URL: %s", handlerURL)
+	json, err := json.Marshal(Action.Payload)
+	if err != nil {
+		log.Printf("ERROR marshalling JSON for action with name [%s]: %s", Action.Name, err)
+	}
+	log.Printf("Performing action with name [%s], handler [%s], handler URL [%s] and payload [%s]",
+		Action.Name, actionDesc.Handler, handlerURL, json)
+	_, err = http.Post(handlerURL, "application/json", bytes.NewReader(json))
+	if err != nil {
+		log.Printf("ERROR performing action with name [%s], handler [%s], handler URL [%s]: %s",
+			Action.Name, actionDesc.Handler, handlerURL, err)
+	}
 }

@@ -4,7 +4,7 @@
             "url": "http://localhost:8080/handlers/createOrder"
         },
         "capturePayment": {
-            "url": "http://localhost:8080/handlers/createOrder"
+            "url": "http://localhost:8080/handlers/capturePayment"
         },
         "splitOrder": {
             "url": "http://localhost:8080/handlers/splitOrder"

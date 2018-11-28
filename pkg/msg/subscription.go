@@ -31,6 +31,6 @@ func (s *Subscripton) NextMessage(Message interface{}) bool {
 	}
 	log.Printf("Raw message received: %s", msg.Data)
 	json.Unmarshal([]byte(msg.Data), &Message)
-	log.Printf("Unmarshaled messaged: %v", Message)
+	log.Printf("Unmarshalled message: %v", Message)
 	return true
 }

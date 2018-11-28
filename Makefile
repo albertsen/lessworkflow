@@ -6,14 +6,18 @@ GOGET=$(GOCMD) get
 BUILD_DIR=build
 BINARY_PUBLISHER=publisher
 BINARY_PROCESSENGINE=processengine
+BINARY_ACTIONHANDLER=actionhandler
     
 all: build
-build: publisher processengine
+build: publisher processengine actionhandler
 
 publisher:
 		$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PUBLISHER) -v cmd/publisher/publisher.go 
 processengine:
 		$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PROCESSENGINE) -v cmd/processengine/processengine.go
+actionhandler:
+		$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_ACTIONHANDLER) -v cmd/actionhandler/actionhandler.go
+
 clean: 
 		$(GOCLEAN)
 		rm -rf $(BUILD_DIR)
