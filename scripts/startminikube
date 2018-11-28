@@ -1,0 +1,3 @@
+#!/bin/bash
+
+exec minikube -p lw-processengine start --vm-driver hyperkit

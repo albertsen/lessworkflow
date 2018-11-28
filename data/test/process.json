@@ -1,0 +1,48 @@
+{
+    "handlers": {
+        "createOrder": {
+            "url": "http://localhost:8080/handlers/createOrder"
+        },
+        "capturePayment": {
+            "url": "http://localhost:8080/handlers/createOrder"
+        },
+        "splitOrder": {
+            "url": "http://localhost:8080/handlers/splitOrder"
+        },
+        "error": {
+            "url": "http://localhost:8080/handlers/reportError"
+        },
+        "done": {
+            "url": "http://localhost:8080/handlers/reportDone"
+        }
+    },
+    "workflow": {
+        "createOrder": {
+            "handler": "createOrder",
+            "transitions": {
+                "CREATED": "capturePayment",
+                "ERROR": "error"
+            }
+        },
+        "capturePayment": {
+            "handler": "capturePayment",
+            "transitions": {
+                "PAYMENT_CAPTURED": "splitOrder",
+                "ERROR": "error"
+            }
+        },
+        "splitOrder": {
+            "handler": "splitOrder",
+            "transitions": {
+                "ORDER_SPLIT": "done",
+                "ERROR": "error"
+            }
+        },
+        "error": {
+            "handler": "error"
+        },
+        "done": {
+            "handler": "done"
+        }
+    }
+}
