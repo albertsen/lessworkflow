@@ -10,10 +10,10 @@
             "url": "http://localhost:8080/handlers/splitOrder"
         },
         "error": {
-            "url": "http://localhost:8080/handlers/reportError"
+            "url": "http://localhost:8080/handlers/error"
         },
         "done": {
-            "url": "http://localhost:8080/handlers/reportDone"
+            "url": "http://localhost:8080/handlers/done"
         }
     },
     "workflow": {

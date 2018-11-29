@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/albertsen/lessworkflow/pkg/action"
+	"github.com/albertsen/lessworkflow/pkg/order"
 	"github.com/gorilla/mux"
 )
 
@@ -20,21 +23,37 @@ func main() {
 }
 
 func CreateOrder(w http.ResponseWriter, r *http.Request) {
-	log.Print("CreateOrder")
+	updateOrderStatus(w, r, "CREATED")
 }
 
 func CapturePayment(w http.ResponseWriter, r *http.Request) {
-	log.Print("CapturePayment")
+	updateOrderStatus(w, r, "PAYMENT_CAPTURED")
 }
 
 func SplitOrder(w http.ResponseWriter, r *http.Request) {
-	log.Print("SplitOrder")
+	updateOrderStatus(w, r, "ORDER_SPLIT")
 }
 
 func Error(w http.ResponseWriter, r *http.Request) {
-	log.Print("Error")
+	updateOrderStatus(w, r, "ERROR")
+
 }
 
 func Done(w http.ResponseWriter, r *http.Request) {
-	log.Print("Done")
+	updateOrderStatus(w, r, "DONE")
+}
+
+func updateOrderStatus(w http.ResponseWriter, r *http.Request, Result string) {
+	log.Printf("Returning result: %s", Result)
+	var order order.Order
+	json.NewDecoder(r.Body).Decode(&order)
+	order.Status = Result
+	var actionResponse action.Response
+	actionResponse.Result = Result
+	actionResponse.Payload = action.Payload{
+		ID:      order.ID,
+		Type:    "order",
+		Content: order,
+	}
+	json.NewEncoder(w).Encode(actionResponse)
 }
