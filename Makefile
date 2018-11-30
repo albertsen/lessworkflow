@@ -4,15 +4,15 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 BUILD_DIR=build
-BINARY_PUBLISHER=publisher
+BINARY_PUBLISH=publish
 BINARY_PROCESSENGINE=processengine
 BINARY_ACTIONHANDLER=actionhandler
     
 all: build
-build: publisher processengine actionhandler
+build: publish processengine actionhandler
 
-publisher:
-		$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PUBLISHER) -v cmd/publisher/publisher.go 
+publish:
+		$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PUBLISH) -v cmd/publish/publish.go 
 processengine:
 		$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PROCESSENGINE) -v cmd/processengine/processengine.go
 actionhandler:
