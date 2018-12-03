@@ -1,0 +1,62 @@
+apiVersion: v1
+data:
+  process.json: |-
+    {
+        "handlers": {
+            "createOrder": {
+                "url": "http://actionhandler.lw.svc.cluster.local/handlers/createOrder"
+            },
+            "capturePayment": {
+                "url": "http://actionhandler.lw.svc.cluster.local/handlers/capturePayment"
+            },
+            "splitOrder": {
+                "url": "http://actionhandler.lw.svc.cluster.local/handlers/splitOrder"
+            },
+            "error": {
+                "url": "http://actionhandler.lw.svc.cluster.local/handlers/error"
+            },
+            "done": {
+                "url": "http://actionhandler.lw.svc.cluster.local/handlers/done"
+            }
+        },
+        "workflow": {
+            "createOrder": {
+                "handler": "createOrder",
+                "transitions": {
+                    "CREATED": "capturePayment",
+                    "ERROR": "error"
+                }
+            },
+            "createOrder3": {
+                "handler": "createOrder",
+                "transitions": {
+                    "CREATED": "capturePayment",
+                    "ERROR": "error"
+                }
+            },
+            "capturePayment": {
+                "handler": "capturePayment",
+                "transitions": {
+                    "PAYMENT_CAPTURED": "splitOrder",
+                    "ERROR": "error"
+                }
+            },
+            "splitOrder": {
+                "handler": "splitOrder",
+                "transitions": {
+                    "ORDER_SPLIT": "done",
+                    "ERROR": "error"
+                }
+            },
+            "error": {
+                "handler": "error"
+            },
+            "done": {
+                "handler": "done"
+            }
+        }
+    }
+kind: ConfigMap
+metadata:
+  name: processengine-config
+  namespace: lw

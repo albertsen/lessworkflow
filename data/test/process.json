@@ -1,19 +1,19 @@
 {
     "handlers": {
         "createOrder": {
-            "url": "http://localhost:8080/handlers/createOrder"
+            "url": "http://actionhandler.lw.svc.cluster.local/handlers/createOrder"
         },
         "capturePayment": {
-            "url": "http://localhost:8080/handlers/capturePayment"
+            "url": "http://actionhandler.lw.svc.cluster.local/handlers/capturePayment"
         },
         "splitOrder": {
-            "url": "http://localhost:8080/handlers/splitOrder"
+            "url": "http://actionhandler.lw.svc.cluster.local/handlers/splitOrder"
         },
         "error": {
-            "url": "http://localhost:8080/handlers/error"
+            "url": "http://actionhandler.lw.svc.cluster.local/handlers/error"
         },
         "done": {
-            "url": "http://localhost:8080/handlers/done"
+            "url": "http://actionhandler.lw.svc.cluster.local/handlers/done"
         }
     },
     "workflow": {

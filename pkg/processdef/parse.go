@@ -3,6 +3,7 @@ package processdef
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 )
 
 func ParseFile(File string) (*ProcessDef, error) {
@@ -10,6 +11,7 @@ func ParseFile(File string) (*ProcessDef, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("Using process definition: %s", json)
 	return ParseJSON(json)
 }
 
