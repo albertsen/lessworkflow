@@ -27,13 +27,6 @@ data:
                     "ERROR": "error"
                 }
             },
-            "createOrder3": {
-                "handler": "createOrder",
-                "transitions": {
-                    "CREATED": "capturePayment",
-                    "ERROR": "error"
-                }
-            },
             "capturePayment": {
                 "handler": "capturePayment",
                 "transitions": {

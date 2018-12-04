@@ -21,7 +21,7 @@ spec:
         imagePullPolicy: Always
         volumeMounts:
         - name: config-volume
-          mountPath: /etc/config
+          mountPath: /config
       volumes:
       - name: config-volume
         configMap:

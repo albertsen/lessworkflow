@@ -7,11 +7,12 @@ import (
 )
 
 func ParseFile(File string) (*ProcessDef, error) {
+	log.Printf("Loading process definition from file: %s", File)
 	json, err := ioutil.ReadFile(File)
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("Using process definition: %s", json)
+	log.Printf("Process definition loaded: %s", json)
 	return ParseJSON(json)
 }
 
