@@ -4,25 +4,34 @@ GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 BUILD_DIR=build
-BINARY_PUBLISH=publish
-BINARY_PROCESSENGINE=processengine
-BINARY_ACTIONHANDLER=actionhandler
+GEN_DIR=gen
 KUBECTL=kubectl
 DOCKER=docker
+PROTOC=protoc
+PROGEN=protoc --go_out=plugins=grpc:$(GEN_DIR)
     
 all: build
 build: publish processengine actionhandler
 
-publish:
-	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PUBLISH) -v cmd/publish/publish.go 
+order:
+	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order/order.go 
 processengine:
-	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_PROCESSENGINE) -v cmd/processengine/processengine.go
+	$(GOBUILD) -o $(BUILD_DIR)/processengine -v cmd/processengine/processengine.go
 actionhandler:
-	$(GOBUILD) -o $(BUILD_DIR)/$(BINARY_ACTIONHANDLER) -v cmd/actionhandler/actionhandler.go
+	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v cmd/actionhandler/actionhandler.go
+orderservice:
+	$(GOBUILD) -o $(BUILD_DIR)/orderservice -v cmd/orderservice/orderservice.go
+
+
+protobuf:
+	mkdir -p $(GEN_DIR)
+	$(PROGEN) ./proto/action/*.proto
+	$(PROGEN) ./proto/order/*.proto
 
 clean: 
 	$(GOCLEAN)
 	rm -rf $(BUILD_DIR)
+	rm -rf $(GEN_DIR)
 
 # Cross compilation
 build-linux: export CGO_ENABLED=0

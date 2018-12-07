@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package action;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+message ActionRequest {
+  string name = 1;
+  string process_id = 2;
+  int32 retry_count = 3;
+  google.protobuf.Timestamp delay_util = 4;
+  ActionPayload payload = 5;
+};
+
+message ActionResponse {
+  string result = 1;
+  ActionPayload payload = 2;
+};
+
+message ActionPayload {
+  string id = 1;
+  string type = 2;
+  google.protobuf.Any conent = 3;
+};
