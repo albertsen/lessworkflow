@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/albertsen/lessworkflow/pkg/action"
+	"github.com/albertsen/lessworkflow/gen/proto"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 	"github.com/albertsen/lessworkflow/pkg/processdef"
 )
@@ -36,12 +36,12 @@ func main() {
 	defer con.Close()
 	sub := con.Subscribe(*topic)
 	for {
-		var actionRequest action.Request
+		var actionRequest proto.ActionRequest
 		if sub.NextMessage(&actionRequest) {
 			err := performAction(con, processDef, &actionRequest)
 			if err != nil {
 				log.Printf("ERROR in process [%s] - performing action [%s]: %s",
-					actionRequest.ProcessID, actionRequest.Name, err)
+					actionRequest.ProcessId, actionRequest.Name, err)
 			}
 		} else {
 			log.Print("No message received. Trying again.")
@@ -49,11 +49,11 @@ func main() {
 	}
 }
 
-func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef, ActionRequest *action.Request) error {
+func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef, ActionRequest *proto.ActionRequest) error {
 	actionDesc := ProcessDef.Workflow[ActionRequest.Name]
 	handlerURL := ProcessDef.Handlers[actionDesc.Handler].URL
 	log.Printf("Performing action: process [%s] - action [%s] - handler [%s] - handler URL [%s]",
-		ActionRequest.ProcessID, ActionRequest.Name, actionDesc.Handler, handlerURL)
+		ActionRequest.ProcessId, ActionRequest.Name, actionDesc.Handler, handlerURL)
 	jsonDoc, err := json.Marshal(ActionRequest.Payload.Content)
 	if err != nil {
 		return err
@@ -67,28 +67,28 @@ func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef
 	if err != nil {
 		return err
 	}
-	var actionResponse action.Response
+	var actionResponse proto.ActionResponse
 	err = json.Unmarshal(body, &actionResponse)
 	if err != nil {
 		return err
 	}
 	log.Printf("Result of action: process [%s] - action [%s]: %s",
-		ActionRequest.ProcessID, ActionRequest.Name, actionResponse.Result)
+		ActionRequest.ProcessId, ActionRequest.Name, actionResponse.Result)
 	if actionDesc.Transitions == nil {
-		log.Printf("No further transition: process [%s] - action [%s]", ActionRequest.ProcessID, ActionRequest.Name)
+		log.Printf("No further transition: process [%s] - action [%s]", ActionRequest.ProcessId, ActionRequest.Name)
 		return nil
 	}
 	nextAction := actionDesc.Transitions[actionResponse.Result]
 	if nextAction == "" {
 		return fmt.Errorf("Cannot find transition for result: %s", actionResponse.Result)
 	}
-	var nextActionRequest = action.Request{
+	var nextActionRequest = proto.ActionRequest{
 		Name:       nextAction,
 		RetryCount: 0,
 		Payload:    actionResponse.Payload,
-		ProcessID:  ActionRequest.ProcessID,
+		ProcessId:  ActionRequest.ProcessId,
 	}
-	log.Printf("Requesting action: process [%s] - action: %s", nextActionRequest.ProcessID, nextActionRequest.Name)
+	log.Printf("Requesting action: process [%s] - action: %s", nextActionRequest.ProcessId, nextActionRequest.Name)
 	Connection.PublishJSON(*topic, nextActionRequest)
 	return nil
 }

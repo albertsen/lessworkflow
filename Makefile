@@ -11,7 +11,12 @@ PROTOC=protoc
 PROGEN=protoc --go_out=plugins=grpc:$(GEN_DIR)
     
 all: build
-build: publish processengine actionhandler
+build: protobuf order processengine actionhandler orderservice
+
+protobuf:
+	mkdir -p $(GEN_DIR)
+	$(PROGEN) ./proto/action/*.proto
+	$(PROGEN) ./proto/order/*.proto
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order/order.go 
@@ -23,10 +28,6 @@ orderservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderservice -v cmd/orderservice/orderservice.go
 
 
-protobuf:
-	mkdir -p $(GEN_DIR)
-	$(PROGEN) ./proto/action/*.proto
-	$(PROGEN) ./proto/order/*.proto
 
 clean: 
 	$(GOCLEAN)

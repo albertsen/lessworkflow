@@ -1,79 +1,89 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net"
+	"os"
 
-	"github.com/albertsen/lessworkflow/gen/proto/order"
+	"github.com/albertsen/lessworkflow/pkg/msg"
+
+	pbAction "github.com/albertsen/lessworkflow/gen/proto/action"
+	pbOrder "github.com/albertsen/lessworkflow/gen/proto/order"
+	proto "github.com/golang/protobuf/proto"
+
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/satori/go.uuid"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
-const (
-	port = ":50051"
+var (
+	serviceAddr = flag.String("m", "nats://localhost:4222", "Address of messaging server.")
+	listenAddr  = flag.String("a", ":50051", "Address to listen on.")
+	help        = flag.Bool("h", false, "This message.")
 )
 
-type IRepository interface {
-	Create(*order.Order) (*order.Order, error)
-}
-
-// Repository - Dummy repository, this simulates the use of a datastore
-// of some kind. We'll replace this with a real implementation later on.
-type Repository struct {
-	orders []*order.Order
-}
-
-func (repo *Repository) Create(order *order.Order) (*order.Order, error) {
-	order.Id = "newOrder"
-	updated := append(repo.orders, order)
-	repo.orders = updated
-	return order, nil
-}
-
-// Service should implement all of the methods to satisfy the service
-// we defined in our protobuf definition. You can check the interface
-// in the generated code itself for the exact method signatures etc
-// to give you a better idea.
 type service struct {
-	repo IRepository
+	conn *msg.Connection
 }
 
-// CreateConsignment - we created just one method on our service,
-// which is a create method, which takes a context and a request as an
-// argument, these are handled by the gRPC server.
-func (s *service) PlaceOrder(ctx context.Context, req *order.Order) (*order.OrderPlacedResponse, error) {
-
-	// Save our order
-	newOrder, err := s.repo.Create(req)
+func (s *service) CreateOrder(ctx context.Context, order *pbOrder.Order) (*pbOrder.OrderCreatedResponse, error) {
+	newUuid, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
-
-	// Return matching the `Response` message we created in our
-	// protobuf definition.
-	return &order.OrderPlacedResponse{OrderId: newOrder.Id, ProcessId: "myProcessId"}, nil
+	order.Id = newUuid.String()
+	newUuid, err = uuid.NewV4()
+	if err != nil {
+		return nil, err
+	}
+	processID := newUuid.String()
+	orderData, err := proto.Marshal(order)
+	if err != nil {
+		return nil, err
+	}
+	actionRequest := pbAction.Request{
+		Name:      "createOrder",
+		ProcessId: processID,
+		Payload: &pbAction.Payload{
+			Id:   order.Id,
+			Type: "order",
+			Content: &any.Any{
+				TypeUrl: proto.MessageName(order),
+				Value:   orderData,
+			},
+		},
+	}
+	service.conn.pu
+	log.Printf("Order created with ID: " + order.Id)
+	return &pbOrder.OrderCreatedResponse{OrderId: order.Id, ProcessId: processID}, nil
 }
 
 func main() {
 
-	repo := &Repository{}
+	flag.Parse()
+	if *help {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 
-	// Set-up our gRPC server.
-	lis, err := net.Listen("tcp", port)
+	lis, err := net.Listen("tcp", *listenAddr)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("Failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
+	conn, err := msg.Connect(*serviceAddr)
+	if err != nil {
+		log.Fatalf("Failed to connect to messaging server: %s", err)
+	}
 
-	// Register our service with the gRPC server, this will tie our
-	// implementation into the auto-generated interface code for our
-	// protobuf definition.
-	order.RegisterOrderServiceServer(s, &service{repo})
+	pbOrder.RegisterOrderServiceServer(s, &service{conn})
 
-	// Register reflection service on gRPC server.
 	reflection.Register(s)
+	log.Printf("Listening on address: %s", listenAddr)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("Failed to serve: %s", err)
 	}
 }

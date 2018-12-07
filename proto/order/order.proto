@@ -1,11 +1,11 @@
 syntax = "proto3";
 
-package order;
+package lessworkflow.order;
 
 import "google/protobuf/timestamp.proto";
 
 service OrderService {
-  rpc PlaceOrder(Order) returns (OrderPlacedResponse) {}
+  rpc CreateOrder(Order) returns (OrderCreatedResponse) {}
 }
 
 message Order {
@@ -15,14 +15,14 @@ message Order {
   int32 version = 4;
   string status = 5;
   Money total = 6;
-  repeated LineItem line_itemns = 7;
+  repeated LineItem line_items = 7;
 }
 
 message LineItem {
   string product_id = 1;
   string product_description = 2;
   int32 count = 3;
-  Money item_proces = 4;
+  Money item_price = 4;
   Money total = 5;
 }
 
@@ -31,7 +31,7 @@ message Money {
   string currency = 2;
 };
 
-message OrderPlacedResponse {
+message OrderCreatedResponse {
     string order_id = 1;
     string process_id = 2;
 }

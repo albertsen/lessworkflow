@@ -1,25 +1,25 @@
 syntax = "proto3";
 
-package action;
+package lessworkflow.action;
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
 
-message ActionRequest {
+message Request {
   string name = 1;
   string process_id = 2;
   int32 retry_count = 3;
   google.protobuf.Timestamp delay_util = 4;
-  ActionPayload payload = 5;
+  Payload payload = 5;
 };
 
-message ActionResponse {
+message Response {
   string result = 1;
-  ActionPayload payload = 2;
+  Payload payload = 2;
 };
 
-message ActionPayload {
+message Payload {
   string id = 1;
   string type = 2;
-  google.protobuf.Any conent = 3;
+  google.protobuf.Any content = 3;
 };

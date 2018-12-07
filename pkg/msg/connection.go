@@ -16,11 +16,11 @@ func (con *Connection) Close() {
 	con.NatsConn.Close()
 }
 
-func Connect(URL string) *Connection {
+func Connect(URL string) (*Connection, error) {
 	log.Printf("Connecting to NATS server at: %s", URL)
 	nc, err := nats.Connect(URL)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return &Connection{NatsConn: nc}
+	return &Connection{NatsConn: nc}, nil
 }

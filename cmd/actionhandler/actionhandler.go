@@ -1,12 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
-	"github.com/albertsen/lessworkflow/pkg/action"
-	"github.com/albertsen/lessworkflow/pkg/order"
 	"github.com/gorilla/mux"
 )
 
@@ -44,16 +41,4 @@ func Done(w http.ResponseWriter, r *http.Request) {
 }
 
 func updateOrderStatus(w http.ResponseWriter, r *http.Request, Result string) {
-	log.Printf("Returning result: %s", Result)
-	var order order.Order
-	json.NewDecoder(r.Body).Decode(&order)
-	order.Status = Result
-	var actionResponse action.Response
-	actionResponse.Result = Result
-	actionResponse.Payload = action.Payload{
-		ID:      order.ID,
-		Type:    "order",
-		Content: order,
-	}
-	json.NewEncoder(w).Encode(actionResponse)
 }

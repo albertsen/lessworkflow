@@ -1,0 +1,35 @@
+{
+    "time_created": "2018-11-28T10:00:00-05:00",
+    "total": {
+        "amount": 1500,
+        "currency": "EUR"
+    },
+    "line_items": [{
+            "product_id": "augustiner",
+            "product_description": "Augustiner Helles",
+            "count": 5,
+            "item_price": {
+                "amount": 200,
+                "currency": "EUR"
+            },
+            "total": {
+                "amount": 1000,
+                "currency": "EUR"
+            }
+        },
+        {
+            "product_id": "alagashBlack",
+            "product_description": "Alagash Black",
+            "count": 2,
+            "item_price": {
+                "amount": 250,
+                "currency": "EUR"
+            },
+            "total": {
+                "amount": 500,
+                "currency": "EUR"
+            }
+        }
+
+    ]
+}

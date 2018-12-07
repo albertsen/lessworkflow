@@ -1,12 +1,13 @@
 package msg
 
 import (
-	"encoding/json"
 	"log"
+
+	"github.com/golang/protobuf/jsonpb"
 )
 
-func (con *Connection) PublishJSON(Topic string, Message interface{}) error {
-	json, err := json.Marshal(Message)
+func (con *Connection) PublishProtobuf(Topic string, Message interface{}) error {
+	json, err := jsonpb.Marshal(Message)
 	if err != nil {
 		log.Printf("Error marshalling message [%s]: %v", err, Message)
 		return err
