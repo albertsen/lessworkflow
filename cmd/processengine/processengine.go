@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/albertsen/lessworkflow/gen/proto"
+	pbAction "github.com/albertsen/lessworkflow/gen/proto/action"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 	"github.com/albertsen/lessworkflow/pkg/processdef"
 )
@@ -32,11 +32,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error reading process definition: %s", err)
 	}
-	con := msg.Connect(*url)
+	con, err := msg.Connect(*url)
+	if err != nil {
+		log.Fatalf("Error connecting to messaging server [%s]: %s", url, err)
+	}
 	defer con.Close()
 	sub := con.Subscribe(*topic)
 	for {
-		var actionRequest proto.ActionRequest
+		var actionRequest pbAction.Request
 		if sub.NextMessage(&actionRequest) {
 			err := performAction(con, processDef, &actionRequest)
 			if err != nil {
@@ -49,7 +52,7 @@ func main() {
 	}
 }
 
-func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef, ActionRequest *proto.ActionRequest) error {
+func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef, ActionRequest *pbAction.Request) error {
 	actionDesc := ProcessDef.Workflow[ActionRequest.Name]
 	handlerURL := ProcessDef.Handlers[actionDesc.Handler].URL
 	log.Printf("Performing action: process [%s] - action [%s] - handler [%s] - handler URL [%s]",
@@ -67,7 +70,7 @@ func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef
 	if err != nil {
 		return err
 	}
-	var actionResponse proto.ActionResponse
+	var actionResponse pbAction.Response
 	err = json.Unmarshal(body, &actionResponse)
 	if err != nil {
 		return err
@@ -82,13 +85,13 @@ func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef
 	if nextAction == "" {
 		return fmt.Errorf("Cannot find transition for result: %s", actionResponse.Result)
 	}
-	var nextActionRequest = proto.ActionRequest{
+	var nextActionRequest = pbAction.Request{
 		Name:       nextAction,
 		RetryCount: 0,
 		Payload:    actionResponse.Payload,
 		ProcessId:  ActionRequest.ProcessId,
 	}
 	log.Printf("Requesting action: process [%s] - action: %s", nextActionRequest.ProcessId, nextActionRequest.Name)
-	Connection.PublishJSON(*topic, nextActionRequest)
+	Connection.PublishProtobuf(*topic, &nextActionRequest)
 	return nil
 }

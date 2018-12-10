@@ -22,6 +22,7 @@ import (
 var (
 	serviceAddr = flag.String("m", "nats://localhost:4222", "Address of messaging server.")
 	listenAddr  = flag.String("a", ":50051", "Address to listen on.")
+	topic       = flag.String("t", "actions", "Message topic")
 	help        = flag.Bool("h", false, "This message.")
 )
 
@@ -29,17 +30,17 @@ type service struct {
 	conn *msg.Connection
 }
 
-func (s *service) CreateOrder(ctx context.Context, order *pbOrder.Order) (*pbOrder.OrderCreatedResponse, error) {
-	newUuid, err := uuid.NewV4()
+func (service *service) CreateOrder(ctx context.Context, order *pbOrder.Order) (*pbOrder.OrderCreatedResponse, error) {
+	newUUID, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
-	order.Id = newUuid.String()
-	newUuid, err = uuid.NewV4()
+	order.Id = newUUID.String()
+	newUUID, err = uuid.NewV4()
 	if err != nil {
 		return nil, err
 	}
-	processID := newUuid.String()
+	processID := newUUID.String()
 	orderData, err := proto.Marshal(order)
 	if err != nil {
 		return nil, err
@@ -56,7 +57,7 @@ func (s *service) CreateOrder(ctx context.Context, order *pbOrder.Order) (*pbOrd
 			},
 		},
 	}
-	service.conn.pu
+	service.conn.PublishProtobuf(*topic, &actionRequest)
 	log.Printf("Order created with ID: " + order.Id)
 	return &pbOrder.OrderCreatedResponse{OrderId: order.Id, ProcessId: processID}, nil
 }

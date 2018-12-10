@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/albertsen/lessworkflow/gen/proto"
+	pbOrder "github.com/albertsen/lessworkflow/gen/proto/order"
 	"github.com/golang/protobuf/jsonpb"
 	"google.golang.org/grpc"
 )
@@ -21,13 +21,13 @@ func main() {
 	flag.Parse()
 	command := flag.Arg(0)
 	orderFileName := flag.Arg(1)
-	if *help || command != "place" || orderFileName == "" {
-		fmt.Printf("Usage: %s [options] place <order file>\n\nValid options:\n", os.Args[0])
+	if *help || command != "create" || orderFileName == "" {
+		fmt.Printf("Usage: %s [options] create <order file>\n\nValid options:\n", os.Args[0])
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	var order proto.Order
+	var order pbOrder.Order
 	orderFile, err := os.Open(orderFileName)
 	if err != nil {
 		log.Fatalf("Error opening file: %s", err)
@@ -43,9 +43,9 @@ func main() {
 		log.Fatalf("Did not connect: %s", err)
 	}
 	defer conn.Close()
-	client := proto.NewOrderServiceClient(conn)
+	client := pbOrder.NewOrderServiceClient(conn)
 
-	r, err := client.PlaceOrder(context.Background(), &order)
+	r, err := client.CreateOrder(context.Background(), &order)
 	if err != nil {
 		log.Fatalf("Error placing order: %s", err)
 	}

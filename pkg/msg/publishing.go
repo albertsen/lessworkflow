@@ -3,22 +3,18 @@ package msg
 import (
 	"log"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 )
 
-func (con *Connection) PublishProtobuf(Topic string, Message interface{}) error {
-	json, err := jsonpb.Marshal(Message)
+func (con *Connection) PublishProtobuf(Topic string, Message proto.Message) error {
+	data, err := proto.Marshal(Message)
 	if err != nil {
-		log.Printf("Error marshalling message [%s]: %v", err, Message)
 		return err
 	}
-	return con.PublishBytes(Topic, json)
+	return con.PublishBytes(Topic, data)
 }
 
 func (con *Connection) PublishBytes(Topic string, Message []byte) error {
 	log.Printf("Publishing message to topic [%s]: %s", Topic, string(Message))
-	if err := con.NatsConn.Publish(Topic, Message); err != nil {
-		log.Printf("Error publishing message [%s]: %s", err, string(Message))
-	}
-	return nil
+	return con.NatsConn.Publish(Topic, Message)
 }
