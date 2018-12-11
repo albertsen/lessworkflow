@@ -1,5 +1,6 @@
 GOCMD=go
 GOBUILD=$(GOCMD) build
+GOTEST=$(GOCMD) test
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
@@ -11,7 +12,7 @@ PROTOC=protoc
 PROGEN=protoc --go_out=plugins=grpc:$(GEN_DIR)
     
 all: build
-build: protobuf order processengine actionhandler orderservice
+build: protobuf orderstorageservice # order processengine actionhandler orderservice orderstorageervice
 
 protobuf:
 	mkdir -p $(GEN_DIR)
@@ -26,7 +27,8 @@ actionhandler:
 	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v cmd/actionhandler/actionhandler.go
 orderservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderservice -v cmd/orderservice/orderservice.go
-
+orderstorageservice:
+	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v cmd/orderstorageservice/orderstorageservice.go
 
 
 clean: 

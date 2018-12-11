@@ -4,8 +4,10 @@ package lessworkflow.order;
 
 import "google/protobuf/timestamp.proto";
 
-service OrderService {
-  rpc CreateOrder(Order) returns (OrderCreatedResponse) {}
+service OrderStorageService {
+  rpc SaveOrder(Order) returns (SaveOrderResponse) {}
+  rpc GetOrder(GetOrderRequest) returns (Order) {}
+  rpc DeleteOrder(DeleteOrderRequest) returns (DeleteOrderResponse) {}
 }
 
 message Order {
@@ -31,7 +33,17 @@ message Money {
   string currency = 2;
 };
 
-message OrderCreatedResponse {
-    string order_id = 1;
-    string process_id = 2;
+message GetOrderRequest { string order_id = 1; }
+
+message SaveOrderResponse {
+  string order_id = 1;
+  bool created = 2;
+  Order order = 3;
+}
+
+message DeleteOrderRequest { string order_id = 1; }
+
+message DeleteOrderResponse {
+  string order_id = 1;
+  bool deleted = 2;
 }
