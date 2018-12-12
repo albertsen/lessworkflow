@@ -15,7 +15,10 @@ import (
 )
 
 func TestCRUD(t *testing.T) {
-	goPath, _ := os.LookupEnv("GOPATH")
+	goPath := os.Getenv("GOPATH")
+	if goPath == "" {
+		t.Error("GOPATH undefined")
+	}
 	orderFile := goPath + "/src/github.com/albertsen/lessworkflow/data/test/order.json"
 	data, err := ioutil.ReadFile(orderFile)
 	if err != nil {
@@ -39,22 +42,36 @@ func TestCRUD(t *testing.T) {
 	defer conn.Close()
 	client := oss.NewOrderStorageServiceClient(conn)
 	ctx := context.Background()
-	_, err = client.SaveOrder(ctx, &newOrder)
+	getOrderResponse, err := client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: newOrder.Id})
 	if err != nil {
 		t.Error(err)
 	}
-	order, err := client.GetOrder(ctx, &pb.GetOrderRequest{OrderId: newOrder.Id})
+	assert.Nil(t, getOrderResponse.Order)
+	_, err = client.SaveOrder(ctx, &oss.SaveOrderRequest{Order: &newOrder})
 	if err != nil {
 		t.Error(err)
 	}
-	assert.NotNil(t, order)
+	getOrderResponse, err = client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: newOrder.Id})
+	if err != nil {
+		t.Error(err)
+	}
+	assert.NotNil(t, getOrderResponse.Order)
 	newOrderJSON, err = new(jsonpb.Marshaler).MarshalToString(&newOrder)
 	if err != nil {
 		t.Error(err)
 	}
-	orderJSON, err := new(jsonpb.Marshaler).MarshalToString(order)
+	orderJSON, err := new(jsonpb.Marshaler).MarshalToString(getOrderResponse.Order)
 	if err != nil {
 		t.Error(err)
 	}
 	assert.JSONEq(t, newOrderJSON, orderJSON)
+	_, err = client.DeleteOrder(ctx, &oss.DeleteOrderRequest{OrderId: newOrder.Id})
+	if err != nil {
+		t.Error(err)
+	}
+	getOrderResponse, err = client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: newOrder.Id})
+	if err != nil {
+		t.Error(err)
+	}
+	assert.Nil(t, getOrderResponse.Order)
 }

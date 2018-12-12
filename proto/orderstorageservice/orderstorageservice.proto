@@ -7,22 +7,24 @@ option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderstorageser
 import "proto/orderdata/orderdata.proto";
 
 service OrderStorageService {
-  rpc SaveOrder(lessworkflow.orderdata.Order) returns (SaveOrderResponse) {}
-  rpc GetOrder(GetOrderRequest) returns (lessworkflow.orderdata.Order) {}
+  rpc SaveOrder(SaveOrderRequest) returns (SaveOrderResponse) {}
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {}
   rpc DeleteOrder(DeleteOrderRequest) returns (DeleteOrderResponse) {}
 }
 
-message GetOrderRequest { string order_id = 1; }
+message GetOrderRequest { 
+  string order_id = 1; }
+
+message GetOrderResponse {  lessworkflow.orderdata.Order order = 1; }
+
+message SaveOrderRequest {
+  lessworkflow.orderdata.Order order = 1;  
+}
 
 message SaveOrderResponse {
-  string order_id = 1;
-  bool created = 2;
-  lessworkflow.orderdata.Order order = 3;
+  lessworkflow.orderdata.Order order = 1;
 }
 
 message DeleteOrderRequest { string order_id = 1; }
 
-message DeleteOrderResponse {
-  string order_id = 1;
-  bool deleted = 2;
-}
+message DeleteOrderResponse {  }
