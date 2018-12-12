@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package lessworkflow.orderprocessservice;
+
+option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderprocessservice";
+
+import "proto/orderdata/orderdata.proto";
+
+service OrderProcessService {
+  rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {}
+  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {}
+}
+
+message PlaceOrderRequest {
+  lessworkflow.orderdata.Order order = 1;  
+}
+
+message PlaceOrderResponse { 
+  string order_id = 1; 
+}
+
+message GetOrderRequest { 
+  string order_id = 1; 
+}
+
+message GetOrderResponse {
+  lessworkflow.orderdata.Order order = 1; 
+}
