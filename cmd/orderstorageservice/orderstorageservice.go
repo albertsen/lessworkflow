@@ -7,7 +7,8 @@ import (
 	"net"
 	"os"
 
-	pb "github.com/albertsen/lessworkflow/gen/proto/order"
+	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
+	oss "github.com/albertsen/lessworkflow/gen/proto/orderstorageservice"
 
 	ds "cloud.google.com/go/datastore"
 	"google.golang.org/grpc"
@@ -23,15 +24,15 @@ type service struct {
 	DSClient *ds.Client
 }
 
-func (service *service) SaveOrder(ctx context.Context, order *pb.Order) (*pb.SaveOrderResponse, error) {
+func (service *service) SaveOrder(ctx context.Context, order *od.Order) (*oss.SaveOrderResponse, error) {
 	key := ds.NameKey("order", order.Id, nil)
 	_, err := service.DSClient.Put(ctx, key, order)
-	return &pb.SaveOrderResponse{OrderId: order.Id, Created: false, Order: order}, err
+	return &oss.SaveOrderResponse{OrderId: order.Id, Created: false, Order: order}, err
 }
 
-func (service *service) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (*pb.Order, error) {
+func (service *service) GetOrder(ctx context.Context, req *oss.GetOrderRequest) (*od.Order, error) {
 	key := ds.NameKey("order", req.OrderId, nil)
-	var order pb.Order
+	var order od.Order
 	err := service.DSClient.Get(ctx, key, &order)
 	if err != nil {
 		return nil, err
@@ -39,7 +40,7 @@ func (service *service) GetOrder(ctx context.Context, req *pb.GetOrderRequest) (
 	return &order, nil
 }
 
-func (service *service) DeleteOrder(context.Context, *pb.DeleteOrderRequest) (*pb.DeleteOrderResponse, error) {
+func (service *service) DeleteOrder(context.Context, *oss.DeleteOrderRequest) (*oss.DeleteOrderResponse, error) {
 	return nil, nil
 }
 
@@ -62,7 +63,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to create new Cloud Datastore client: %s", err)
 	}
-	pb.RegisterOrderStorageServiceServer(server, &service{DSClient: dsClient})
+	oss.RegisterOrderStorageServiceServer(server, &service{DSClient: dsClient})
 
 	reflection.Register(server)
 	log.Printf("Listening on address: %s", *listenAddr)

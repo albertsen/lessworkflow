@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package lessworkflow.orderdata;
+
+option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderdata";
+
+import "google/protobuf/timestamp.proto";
+
+message Order {
+  string id = 1;
+  google.protobuf.Timestamp time_placed = 2;
+  google.protobuf.Timestamp time_created = 3;
+  int32 version = 4;
+  string status = 5;
+  Money total = 6;
+  repeated LineItem line_items = 7;
+}
+
+message LineItem {
+  string product_id = 1;
+  string product_description = 2;
+  int32 count = 3;
+  Money item_price = 4;
+  Money total = 5;
+}
+
+message Money {
+  int64 amount = 1;
+  string currency = 2;
+};
+
+

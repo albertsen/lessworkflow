@@ -1,6 +1,8 @@
 syntax = "proto3";
 
-package lessworkflow.action;
+package lessworkflow.actiondata;
+
+option go_package = "github.com/albertsen/lessworkflow/gen/proto/actiondata";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";

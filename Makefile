@@ -6,18 +6,20 @@ GOTEST=$(GOCMD) test
 GOGET=$(GOCMD) get
 BUILD_DIR=build
 GEN_DIR=gen
+PROTO_OUT_DIR=${GOPATH}/src
 KUBECTL=kubectl
 DOCKER=docker
 PROTOC=protoc
-PROGEN=protoc --go_out=plugins=grpc:$(GEN_DIR)
+PROGEN=protoc --go_out=plugins=grpc:$(PROTO_OUT_DIR)
     
 all: build
 build: protobuf orderstorageservice # order processengine actionhandler orderservice orderstorageervice
 
 protobuf:
 	mkdir -p $(GEN_DIR)
-	$(PROGEN) ./proto/action/*.proto
-	$(PROGEN) ./proto/order/*.proto
+	$(PROGEN) ./proto/actiondata/*.proto
+	$(PROGEN) ./proto/orderdata/*.proto
+	$(PROGEN) ./proto/orderstorageservice/*.proto
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order/order.go 

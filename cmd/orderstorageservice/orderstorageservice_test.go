@@ -6,7 +6,8 @@ import (
 	"os"
 	"testing"
 
-	pb "github.com/albertsen/lessworkflow/gen/proto/order"
+	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
+	oss "github.com/albertsen/lessworkflow/gen/proto/orderstorageservice"
 	"github.com/golang/protobuf/jsonpb"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -21,7 +22,7 @@ func TestCRUD(t *testing.T) {
 		t.Error(err)
 	}
 	newOrderJSON := string(data)
-	var newOrder pb.Order
+	var newOrder od.Order
 	err = jsonpb.UnmarshalString(string(newOrderJSON), &newOrder)
 	if err != nil {
 		t.Error(err)
@@ -36,7 +37,7 @@ func TestCRUD(t *testing.T) {
 		t.Error(err)
 	}
 	defer conn.Close()
-	client := pb.NewOrderStorageServiceClient(conn)
+	client := oss.NewOrderStorageServiceClient(conn)
 	ctx := context.Background()
 	_, err = client.SaveOrder(ctx, &newOrder)
 	if err != nil {
