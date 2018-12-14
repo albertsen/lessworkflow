@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"log"
 	"net"
@@ -10,6 +11,7 @@ import (
 
 	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
 	oss "github.com/albertsen/lessworkflow/gen/proto/orderstorageservice"
+	uuid "github.com/satori/go.uuid"
 
 	ds "cloud.google.com/go/datastore"
 	"google.golang.org/grpc"
@@ -27,11 +29,37 @@ type service struct {
 	DSClient *ds.Client
 }
 
-func (service *service) SaveOrder(ctx context.Context, req *oss.SaveOrderRequest) (*oss.SaveOrderResponse, error) {
+func (service *service) CreateOrder(ctx context.Context, req *oss.CreateOrderRequest) (*oss.CreateOrderResponse, error) {
 	order := req.Order
+	if order.Id != "" {
+		return &oss.CreateOrderResponse{}, errors.New("New order cannot have ID")
+	}
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return &oss.CreateOrderResponse{}, nil
+	}
+	order.Id = uuid.String()
 	key := ds.NameKey("order", order.Id, nil)
-	_, err := service.DSClient.Put(ctx, key, order)
-	return &oss.SaveOrderResponse{Order: order}, err
+	mut := ds.NewInsert(key, order)
+	_, err = service.DSClient.Mutate(ctx, mut)
+	if err != nil {
+		return &oss.CreateOrderResponse{}, nil
+	}
+	return &oss.CreateOrderResponse{OrderId: order.Id}, nil
+}
+
+func (service *service) UpdateOrder(ctx context.Context, req *oss.UpdateOrderRequest) (*oss.UpdateOrderResponse, error) {
+	order := req.Order
+	if order.Id == "" {
+		return &oss.UpdateOrderResponse{}, errors.New("Order is missing ID")
+	}
+	key := ds.NameKey("order", order.Id, nil)
+	mut := ds.NewUpdate(key, order)
+	_, err := service.DSClient.Mutate(ctx, mut)
+	if err != nil {
+		return &oss.UpdateOrderResponse{}, nil
+	}
+	return &oss.UpdateOrderResponse{}, nil
 }
 
 func (service *service) GetOrder(ctx context.Context, req *oss.GetOrderRequest) (*oss.GetOrderResponse, error) {
@@ -48,6 +76,9 @@ func (service *service) GetOrder(ctx context.Context, req *oss.GetOrderRequest) 
 }
 
 func (service *service) DeleteOrder(ctx context.Context, req *oss.DeleteOrderRequest) (*oss.DeleteOrderResponse, error) {
+	if req.OrderId == "" {
+		return nil, errors.New("Order ID cannot be empty")
+	}
 	key := ds.NameKey("order", req.OrderId, nil)
 	service.DSClient.Delete(ctx, key)
 	return &oss.DeleteOrderResponse{}, nil
