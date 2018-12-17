@@ -15,12 +15,17 @@ PROGEN=protoc --go_out=plugins=grpc:$(PROTO_OUT_DIR)
 all: build
 build: protobuf orderstorageservice orderprocessservice # order processengine actionhandler orderservice orderstorageervice
 
-protobuf:
+protobuf: gen-protobuf fix-protobuf
+
+gen-protobuf:
 	mkdir -p $(GEN_DIR)
 	$(PROGEN) ./proto/actiondata/*.proto
 	$(PROGEN) ./proto/orderdata/*.proto
 	$(PROGEN) ./proto/orderstorageservice/*.proto
 	$(PROGEN) ./proto/orderprocessservice/*.proto
+
+fix-protobuf:
+	sed -i "" -e "s/XXX\(.*\)\`\(.*\)\`/XXX\1\`\2 \datastore:\"-\"\`/" `find gen -name "*.pb.go"`
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order/order.go 

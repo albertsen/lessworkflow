@@ -28,5 +28,3 @@ message Money {
   int64 amount = 1;
   string currency = 2;
 };
-
-

@@ -2,28 +2,19 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
-	"net"
-	"os"
-	"strconv"
 
 	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
 	oss "github.com/albertsen/lessworkflow/gen/proto/orderstorageservice"
+	"github.com/albertsen/lessworkflow/pkg/gcp"
+	"github.com/albertsen/lessworkflow/pkg/grpc/grpcserver"
+
 	uuid "github.com/satori/go.uuid"
 
 	ds "cloud.google.com/go/datastore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
-)
-
-var (
-	port         = flag.Int("p", 50051, "Port to listen on.")
-	help         = flag.Bool("h", false, "This message.")
-	gcpProjectID = os.Getenv("LW_GCP_PROJECT_ID")
-	listenAddr   string
 )
 
 type service struct {
@@ -88,36 +79,15 @@ func (service *service) DeleteOrder(ctx context.Context, req *oss.DeleteOrderReq
 	return &oss.DeleteOrderResponse{}, nil
 }
 
-func init() {
-	flag.Parse()
-	if *help {
-		flag.PrintDefaults()
-		os.Exit(1)
-	}
-	listenAddr = ":" + strconv.Itoa(*port)
-	if gcpProjectID == "" {
-		gcpProjectID = "sap-se-commerce-arch"
-	}
-}
-
 func main() {
 
-	lis, err := net.Listen("tcp", listenAddr)
-	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
-	}
-	server := grpc.NewServer()
+	grpcserver.StartServer(func(server *grpc.Server) {
+		ctx := context.Background()
+		dsClient, err := ds.NewClient(ctx, gcp.Project)
+		if err != nil {
+			log.Fatalf("Failed to create new Cloud Datastore client: %s", err)
+		}
+		oss.RegisterOrderStorageServiceServer(server, &service{DSClient: dsClient})
+	})
 
-	ctx := context.Background()
-	dsClient, err := ds.NewClient(ctx, gcpProjectID)
-	if err != nil {
-		log.Fatalf("Failed to create new Cloud Datastore client: %s", err)
-	}
-	oss.RegisterOrderStorageServiceServer(server, &service{DSClient: dsClient})
-
-	reflection.Register(server)
-	log.Printf("Listening on address: %s", listenAddr)
-	if err := server.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %s", err)
-	}
 }
