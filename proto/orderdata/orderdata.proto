@@ -5,29 +5,76 @@ package lessworkflow.orderdata;
 option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderdata";
 
 import "google/protobuf/timestamp.proto";
-
+import "google/protobuf/any.proto";
 
 message Order {
   string id = 1;
   google.protobuf.Timestamp time_placed = 2;
   google.protobuf.Timestamp time_created = 3;
   google.protobuf.Timestamp time_updated = 4;
-  int32 version = 5;
   string status = 6;
-  // @inject_tag: sql:"composite:total_price"
-  MonetaryAmount total_price = 7;
-  // @inject_tag: sql:"composite:line_items"
-  repeated LineItem line_items = 8;
+  int32 version = 7;
+  OrderDetails details = 8;
+}
+
+message OrderDetails {
+  LineItemGroupCollection ordered = 1;
+  LineItemGroupCollection shipped = 2;
+  map<string, google.protobuf.Any> properties = 3;
+}
+
+message LineItemGroupCollection {
+  string status = 1;
+  MonetaryAmount total_price = 2;  
+  MonetaryAmount total_tax = 3;
+  repeated Tax taxes = 4;
+  repeated LineItem line_items = 5;
+  map<string, google.protobuf.Any> properties = 6;
+}
+
+message LineItemGroup {
+  string status = 1;
+  MonetaryAmount total_price = 2;
+  repeated LineItem line_items = 3;
+  repeated Tax taxes = 4;
+  MonetaryAmount total_tax = 5;
+  Address delivery_address = 6;
+  Address billing_address = 7;
+  repeated PaymentDetails payment_details = 8;
+  map<string, google.protobuf.Any> properties = 9;
+}
+
+message Address {
+  string name = 1;
+  string address_line1 = 2;
+  string address_line2 = 3;
+  string post_code = 4;
+  string city = 5;
+  string country_code = 6;
+  map<string, google.protobuf.Any> properties = 7;
+}
+
+message PaymentDetails {
+  string subscription_id = 1;
+  string transaction_code = 2;
+  MonetaryAmount amount = 3;
+  map<string, google.protobuf.Any> properties = 4;
 }
 
 message LineItem {
   string product_id = 1;
   string product_description = 2;
   int32 count = 3;
-  // @inject_tag: sql:"composite:item_price"
   MonetaryAmount item_price = 4;
-  // @inject_tag: sql:"composite:total_price"
   MonetaryAmount total_price = 5;
+  repeated Tax item_taxes = 6;
+  repeated Tax total_taxes = 7;
+  map<string, google.protobuf.Any> properties = 8;
+}
+
+message Tax {
+  string code = 1;
+  MonetaryAmount amount = 2;
 }
 
 message MonetaryAmount {

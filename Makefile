@@ -10,36 +10,44 @@ PROTO_OUT_DIR=${GOPATH}/src
 KUBECTL=kubectl
 DOCKER=docker
 PROTOC=protoc
-PROGEN=protoc --go_out=plugins=grpc:$(PROTO_OUT_DIR)
+PROGEN=$(PROTOC) --go_out=plugins=grpc:$(PROTO_OUT_DIR)
+PKGPATH=github.com/albertsen/lessworkflow
 
 
 all: build
-build: protobuf orderstorageservice orderprocessservice # order processengine actionhandler orderservice orderstorageervice
+build: protobuf orderstorageservice # orderprocessservice  order processengine actionhandler orderservice orderstorageervice
 
-protobuf: gen-protobuf post-process-protobuf
-
-gen-protobuf:
+protobuf:
 	mkdir -p $(GEN_DIR)
 	$(PROGEN) ./proto/actiondata/*.proto
 	$(PROGEN) ./proto/orderdata/*.proto
 	$(PROGEN) ./proto/orderstorageservice/*.proto
 	$(PROGEN) ./proto/orderprocessservice/*.proto
 
-post-process-protobuf:
-	sed -i "" -e "s/XXX\(.*\)\`\(.*\)\`/XXX\1\`\2 \sql:\"-\"\`/" `find gen -name "*.pb.go"`
-	protoc-go-inject-tag -input $(GEN_DIR)/proto/orderdata/orderdata.pb.go
-
 order:
-	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order/order.go 
+	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order
 processengine:
-	$(GOBUILD) -o $(BUILD_DIR)/processengine -v cmd/processengine/processengine.go
+	$(GOBUILD) -o $(BUILD_DIR)/processengine -v cmd/processengine
 actionhandler:
-	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v cmd/actionhandler/actionhandler.go
+	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v cmd/actionhandler
 orderprocessservice:
-	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v cmd/orderprocessservice/orderprocessservice.go
+	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v cmd/orderprocessservice
 orderstorageservice:
-	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v cmd/orderstorageservice/orderstorageservice.go
+	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v $(PKGPATH)/cmd/orderstorageservice
 
+test:
+	$(GOTEST) $(PKGPATH)/cmd/orderstorageservice
+
+patch:
+	cp -rv patch/* ${GOPATH}/src
+
+createdb:
+	psql postgres -f sql/create_database.sql 
+	psql lessworkflow -f sql/create_users.sql
+	psql -U lwadmin lessworkflow -f sql/create_tables.sql
+
+dropdb:
+	psql postgres -c "DROP DATABASE lessworkflow"
 
 clean: 
 	$(GOCLEAN)

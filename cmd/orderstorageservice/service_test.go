@@ -8,17 +8,16 @@ import (
 	"os"
 	"testing"
 
-	"google.golang.org/grpc/codes"
-
 	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
 	oss "github.com/albertsen/lessworkflow/gen/proto/orderstorageservice"
 	"github.com/albertsen/lessworkflow/pkg/testing/cmpopts"
 	"github.com/golang/protobuf/jsonpb"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gotest.tools/assert"
 	is "gotest.tools/assert/cmp"
-
-	"google.golang.org/grpc/status"
 )
 
 var client oss.OrderStorageServiceClient
@@ -55,22 +54,34 @@ func TestMain(m *testing.M) {
 }
 
 func TestCRUD(t *testing.T) {
-	order, err := loadOrder()
+	refOrder, err := loadOrder()
 	if err != nil {
 		t.Error(err)
 	}
-	createOrderResponse, err := client.CreateOrder(ctx, &oss.CreateOrderRequest{Order: order})
+	createOrderResponse, err := client.CreateOrder(ctx, &oss.CreateOrderRequest{Order: refOrder})
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Assert(t, createOrderResponse.OrderId != "", "Order ID is empty")
-	getOrderResponse, err := client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: createOrderResponse.OrderId})
+	createdOrder := createOrderResponse.Order
+	assert.Assert(t, createdOrder != nil, "CreateOrder didn't return order")
+	assert.Assert(t, createdOrder.Id != "", "In created order, Id should not be empty")
+	assert.Assert(t, createdOrder.TimeCreated != nil, "In created order, TimeCreated should not be nil")
+	assert.Assert(t, createdOrder.TimePlaced != nil, "In created order, TimePlaced should not be nil")
+	assert.Assert(t, createdOrder.TimeUpdated != nil, "In created order, TimeUpdated should not be nil")
+	assert.Assert(t, createdOrder.Status != "", "In created order, Status should not be empty")
+	assert.Assert(t, createdOrder.Version > 0, "In created order, Version should not be greater than 0")
+	refOrder.Id = createdOrder.Id
+	refOrder.TimeCreated = createdOrder.TimeCreated
+	refOrder.TimePlaced = createdOrder.TimePlaced
+	refOrder.TimeUpdated = createdOrder.TimeUpdated
+	refOrder.Status = createdOrder.Status
+	refOrder.Version = createdOrder.Version
+	getOrderResponse, err := client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: createOrderResponse.Order.Id})
 	if err != nil {
 		t.Error(err)
 	}
 	assert.Assert(t, getOrderResponse.Order != nil, "GetOrder did not return order")
-	order.Id = createOrderResponse.OrderId
-	assert.DeepEqual(t, order, getOrderResponse.Order, cmpopts.IgnoreInternalProtbufFieldsOption)
+	assert.DeepEqual(t, refOrder, getOrderResponse.Order, cmpopts.IgnoreInternalProtbufFieldsOption)
 	lineItem := &od.LineItem{
 		Count: 3,
 		ItemPrice: &od.MonetaryAmount{
@@ -84,23 +95,25 @@ func TestCRUD(t *testing.T) {
 			Currency: "EUR",
 		},
 	}
-	order.LineItems = append(order.LineItems, lineItem)
-	order.TotalPrice.Value += lineItem.TotalPrice.Value
-	_, err = client.UpdateOrder(ctx, &oss.UpdateOrderRequest{Order: order})
+	refOrder.Details.Ordered.LineItems = append(refOrder.Details.Ordered.LineItems, lineItem)
+	refOrder.Details.Ordered.TotalPrice.Value += lineItem.TotalPrice.Value
+	_, err = client.UpdateOrder(ctx, &oss.UpdateOrderRequest{Order: refOrder})
 	if err != nil {
 		t.Error(err)
 	}
-	getOrderResponse, err = client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: createOrderResponse.OrderId})
+	getOrderResponse, err = client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: createOrderResponse.Order.Id})
 	if err != nil {
 		t.Error(err)
 	}
 	assert.Assert(t, getOrderResponse.Order != nil, "GetOrder did not return order")
-	assert.DeepEqual(t, order, getOrderResponse.Order, cmpopts.IgnoreInternalProtbufFieldsOption)
-	_, err = client.DeleteOrder(ctx, &oss.DeleteOrderRequest{OrderId: createOrderResponse.OrderId})
+	assert.Assert(t, getOrderResponse.Order.TimeUpdated.Nanos > refOrder.TimeUpdated.Nanos, "TimeUpdated not updated")
+	refOrder.TimeUpdated = getOrderResponse.Order.TimeUpdated
+	assert.DeepEqual(t, refOrder, getOrderResponse.Order, cmpopts.IgnoreInternalProtbufFieldsOption)
+	_, err = client.DeleteOrder(ctx, &oss.DeleteOrderRequest{OrderId: createOrderResponse.Order.Id})
 	if err != nil {
 		t.Error(err)
 	}
-	getOrderResponse, err = client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: createOrderResponse.OrderId})
+	getOrderResponse, err = client.GetOrder(ctx, &oss.GetOrderRequest{OrderId: createOrderResponse.Order.Id})
 	if err != nil {
 		t.Error(err)
 	}
@@ -136,7 +149,11 @@ func TestCannotUpdateNonExistingOrder(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	order.Id = "doesNotExist"
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		t.Error(err)
+	}
+	order.Id = uuid.String()
 	_, err = client.UpdateOrder(ctx, &oss.UpdateOrderRequest{Order: order})
 	assert.Equal(t, codes.NotFound, errToGRPCStatusCode(t, err))
 }
