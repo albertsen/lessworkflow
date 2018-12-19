@@ -6,25 +6,31 @@ option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderdata";
 
 import "google/protobuf/timestamp.proto";
 
+
 message Order {
   string id = 1;
   google.protobuf.Timestamp time_placed = 2;
   google.protobuf.Timestamp time_created = 3;
-  int32 version = 4;
-  string status = 5;
-  Money total = 6;
-  repeated LineItem line_items = 7;
+  google.protobuf.Timestamp time_updated = 4;
+  int32 version = 5;
+  string status = 6;
+  // @inject_tag: sql:"composite:total_price"
+  MonetaryAmount total_price = 7;
+  // @inject_tag: sql:"composite:line_items"
+  repeated LineItem line_items = 8;
 }
 
 message LineItem {
   string product_id = 1;
   string product_description = 2;
   int32 count = 3;
-  Money item_price = 4;
-  Money total = 5;
+  // @inject_tag: sql:"composite:item_price"
+  MonetaryAmount item_price = 4;
+  // @inject_tag: sql:"composite:total_price"
+  MonetaryAmount total_price = 5;
 }
 
-message Money {
-  int64 amount = 1;
+message MonetaryAmount {
+  int64 value = 1;
   string currency = 2;
 };

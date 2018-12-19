@@ -1,0 +1,2 @@
+CREATE USER lwadmin;
+GRANT ALL PRIVILEGES ON DATABASE lessworkflow TO lwadmin;

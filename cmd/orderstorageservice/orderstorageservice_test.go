@@ -73,19 +73,19 @@ func TestCRUD(t *testing.T) {
 	assert.DeepEqual(t, order, getOrderResponse.Order, cmpopts.IgnoreInternalProtbufFieldsOption)
 	lineItem := &od.LineItem{
 		Count: 3,
-		ItemPrice: &od.Money{
-			Amount:   100,
+		ItemPrice: &od.MonetaryAmount{
+			Value:    100,
 			Currency: "EUR",
 		},
 		ProductId:          "oettinger",
 		ProductDescription: "Oettinger Bier",
-		Total: &od.Money{
-			Amount:   300,
+		TotalPrice: &od.MonetaryAmount{
+			Value:    300,
 			Currency: "EUR",
 		},
 	}
 	order.LineItems = append(order.LineItems, lineItem)
-	order.Total.Amount += lineItem.Total.Amount
+	order.TotalPrice.Value += lineItem.TotalPrice.Value
 	_, err = client.UpdateOrder(ctx, &oss.UpdateOrderRequest{Order: order})
 	if err != nil {
 		t.Error(err)

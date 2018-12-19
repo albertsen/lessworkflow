@@ -11,11 +11,12 @@ KUBECTL=kubectl
 DOCKER=docker
 PROTOC=protoc
 PROGEN=protoc --go_out=plugins=grpc:$(PROTO_OUT_DIR)
-    
+
+
 all: build
 build: protobuf orderstorageservice orderprocessservice # order processengine actionhandler orderservice orderstorageervice
 
-protobuf: gen-protobuf fix-protobuf
+protobuf: gen-protobuf post-process-protobuf
 
 gen-protobuf:
 	mkdir -p $(GEN_DIR)
@@ -24,8 +25,9 @@ gen-protobuf:
 	$(PROGEN) ./proto/orderstorageservice/*.proto
 	$(PROGEN) ./proto/orderprocessservice/*.proto
 
-fix-protobuf:
-	sed -i "" -e "s/XXX\(.*\)\`\(.*\)\`/XXX\1\`\2 \datastore:\"-\"\`/" `find gen -name "*.pb.go"`
+post-process-protobuf:
+	sed -i "" -e "s/XXX\(.*\)\`\(.*\)\`/XXX\1\`\2 \sql:\"-\"\`/" `find gen -name "*.pb.go"`
+	protoc-go-inject-tag -input $(GEN_DIR)/proto/orderdata/orderdata.pb.go
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order/order.go 

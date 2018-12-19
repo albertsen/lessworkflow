@@ -1,43 +1,55 @@
 package main
 
 import (
-	"encoding/json"
-	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
+	"time"
 
-	"github.com/albertsen/lessworkflow/gen/proto/order"
-)
-
-var (
-	url  = flag.String("u", "localhost:50051", "URL of Order Service.")
-	help = flag.Bool("h", false, "This message.")
+	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
+	"github.com/golang/protobuf/jsonpb"
 )
 
 func main() {
-	flag.Parse()
-	command := flag.Arg(0)
-	orderFile := flag.Arg(1)
-	if *help || command != "place" || orderFile == "" {
-		fmt.Printf("Usage: %s [options] place <order file>\n\nValid options:\n", os.Args[0])
-		flag.PrintDefaults()
-		os.Exit(1)
+	now := time.Now()
+	order := od.Order{
+		TimePlaced: &now,
+		TotalPrice: &od.MonetaryAmount{
+			Currency: "EUR",
+			Value:    3250,
+		},
+		LineItems: []*od.LineItem{
+			{
+				ProductId:          "augustiner",
+				ProductDescription: "Augustiner Hell",
+				Count:              10,
+				ItemPrice: &od.MonetaryAmount{
+					Currency: "EUR",
+					Value:    200,
+				},
+				TotalPrice: &od.MonetaryAmount{
+					Currency: "EUR",
+					Value:    2000,
+				},
+			},
+			{
+				ProductId:          "giesinger",
+				ProductDescription: "Giesinger Erhellung",
+				Count:              5,
+				ItemPrice: &od.MonetaryAmount{
+					Currency: "EUR",
+					Value:    250,
+				},
+				TotalPrice: &od.MonetaryAmount{
+					Currency: "EUR",
+					Value:    1250,
+				},
+			},
+		},
 	}
-	var order order.Order
-	data, err := ioutil.ReadFile(orderFile)
+	marshaller := jsonpb.Marshaler{}
+	json, err := marshaller.MarshalToString(&order)
 	if err != nil {
-		fmt.("Error reading file: %s", err)
+		fmt.Println(err)
+	} else {
+		fmt.Print(json)
 	}
-	json.Unmarshal(data, &order)
-
-	// if err != nil {
-	// 	log.Fatalf("Error reading file [%s]: %s", *messageFile, err)
-	// }
-	// con := msg.Connect(*url)
-	// defer con.Close()
-	// err = con.PublishBytes(*topic, message)
-	// if err != nil {
-	// 	log.Fatalf("Cannot publish message: %s", err)
-	// }
 }
