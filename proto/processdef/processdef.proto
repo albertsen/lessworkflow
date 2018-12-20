@@ -7,8 +7,12 @@ package lessworkflow.processdef;
 message ProcessDef {
     string id = 1;
     string description = 2;
+    ProcessWorkflow workflow = 3;
+}
+
+message ProcessWorkflow {
     map<string, HandlerDef> handlers = 3;
-    map<string, ActionDef> workflow = 4;
+    map<string, ActionDef> actions = 4;
 }
 
 message HandlerDef {
