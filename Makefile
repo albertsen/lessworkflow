@@ -15,7 +15,7 @@ PKGPATH=github.com/albertsen/lessworkflow
 
 
 all: build
-build: protobuf orderstorageservice # orderprocessservice  order processengine actionhandler orderservice orderstorageervice
+build: protobuf orderstorageservice  orderprocessservice # order processengine actionhandler orderservice orderstorageervice
 
 protobuf:
 	mkdir -p $(GEN_DIR)
@@ -23,15 +23,16 @@ protobuf:
 	$(PROGEN) ./proto/orderdata/*.proto
 	$(PROGEN) ./proto/orderstorageservice/*.proto
 	$(PROGEN) ./proto/orderprocessservice/*.proto
+	$(PROGEN) ./proto/processdef/*.proto
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order
 processengine:
-	$(GOBUILD) -o $(BUILD_DIR)/processengine -v cmd/processengine
+	$(GOBUILD) -o $(BUILD_DIR)/processengine -v $(PKGPATH)/cmd/processengine
 actionhandler:
-	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v cmd/actionhandler
+	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v $(PKGPATH)/cmd/actionhandler
 orderprocessservice:
-	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v cmd/orderprocessservice
+	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v $(PKGPATH)/cmd/orderprocessservice
 orderstorageservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v $(PKGPATH)/cmd/orderstorageservice
 

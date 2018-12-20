@@ -4,25 +4,26 @@ package lessworkflow.orderprocessservice;
 
 option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderprocessservice";
 
-import "proto/orderdata/orderdata.proto";
+import "proto/processdef/processdef.proto";
 
 service OrderProcessService {
-  rpc PlaceOrder(PlaceOrderRequest) returns (PlaceOrderResponse) {}
-  rpc GetOrder(GetOrderRequest) returns (GetOrderResponse) {}
+  rpc DefineProcess(DefineProcessRequest) returns (DefineProcessResponse) {}
+  rpc StartProcess(StartProcessRequest) returns (StartProcessRequest) {}
 }
 
-message PlaceOrderRequest {
-  lessworkflow.orderdata.Order order = 1;  
+message DefineProcessRequest {
+  lessworkflow.processdef.ProcessDef processDef = 1;
 }
 
-message PlaceOrderResponse { 
-  string order_id = 1; 
+message DefineProcessResponse {
+  string status = 1;
 }
 
-message GetOrderRequest { 
-  string order_id = 1; 
+message StartProcessRequest {
+  string order_id = 1;
+  string process_id = 2;
 }
 
-message GetOrderResponse {
-  lessworkflow.orderdata.Order order = 1; 
+message StartProcessResponse {
+  string process_id = 1;
 }
