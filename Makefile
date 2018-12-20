@@ -36,7 +36,7 @@ orderstorageservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v $(PKGPATH)/cmd/orderstorageservice
 
 test:
-	$(GOTEST) $(PKGPATH)/cmd/orderstorageservice
+	$(GOTEST) -count=1 $(PKGPATH)/cmd/orderstorageservice
 
 patch:
 	cp -rv patch/* ${GOPATH}/src
