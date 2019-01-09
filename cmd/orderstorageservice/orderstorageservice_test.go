@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"io/ioutil"
 	"log"
 	"os"
 	"testing"
@@ -11,7 +9,7 @@ import (
 	od "github.com/albertsen/lessworkflow/gen/proto/orderdata"
 	oss "github.com/albertsen/lessworkflow/gen/proto/orderstorageservice"
 	"github.com/albertsen/lessworkflow/pkg/testing/cmpopts"
-	"github.com/golang/protobuf/jsonpb"
+	tu "github.com/albertsen/lessworkflow/pkg/testing/utils"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -23,23 +21,13 @@ import (
 var client oss.OrderStorageServiceClient
 var ctx context.Context
 
-func loadOrder() (*od.Order, error) {
-	goPath := os.Getenv("GOPATH")
-	if goPath == "" {
-		return nil, errors.New("GOPATH undefined")
-	}
-	orderFile := goPath + "/src/github.com/albertsen/lessworkflow/data/test/order.json"
-	data, err := ioutil.ReadFile(orderFile)
-	if err != nil {
-		return nil, err
-	}
-	orderJSON := string(data)
+func loadOrder(t *testing.T) *od.Order {
 	var order od.Order
-	err = jsonpb.UnmarshalString(string(orderJSON), &order)
+	err := tu.LoadTestData("order", &order)
 	if err != nil {
-		return nil, err
+		t.Error(err)
 	}
-	return &order, err
+	return &order
 }
 
 func TestMain(m *testing.M) {
@@ -54,10 +42,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCRUD(t *testing.T) {
-	refOrder, err := loadOrder()
-	if err != nil {
-		t.Error(err)
-	}
+	refOrder := loadOrder(t)
 	createOrderResponse, err := client.CreateOrder(ctx, &oss.CreateOrderRequest{Order: refOrder})
 	if err != nil {
 		t.Error(err)
@@ -121,12 +106,9 @@ func TestCRUD(t *testing.T) {
 }
 
 func TestCannotCreateOrderWithID(t *testing.T) {
-	order, err := loadOrder()
-	if err != nil {
-		t.Error(err)
-	}
+	order := loadOrder(t)
 	order.Id = "anIDThatCannotBe"
-	_, err = client.CreateOrder(ctx, &oss.CreateOrderRequest{Order: order})
+	_, err := client.CreateOrder(ctx, &oss.CreateOrderRequest{Order: order})
 	assert.Equal(t, codes.InvalidArgument, errToGRPCStatusCode(t, err))
 }
 
@@ -136,19 +118,13 @@ func TestCannotGetOrderWithoutID(t *testing.T) {
 }
 
 func TestCannotUpdateOrderWithoutID(t *testing.T) {
-	order, err := loadOrder()
-	if err != nil {
-		t.Error(err)
-	}
-	_, err = client.UpdateOrder(ctx, &oss.UpdateOrderRequest{Order: order})
+	order := loadOrder(t)
+	_, err := client.UpdateOrder(ctx, &oss.UpdateOrderRequest{Order: order})
 	assert.Equal(t, codes.InvalidArgument, errToGRPCStatusCode(t, err))
 }
 
 func TestCannotUpdateNonExistingOrder(t *testing.T) {
-	order, err := loadOrder()
-	if err != nil {
-		t.Error(err)
-	}
+	order := loadOrder(t)
 	uuid, err := uuid.NewV4()
 	if err != nil {
 		t.Error(err)

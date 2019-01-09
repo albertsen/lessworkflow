@@ -1,0 +1,10 @@
+version: '3'
+services:
+  orderstorageservice:
+    image: gcr.io/sap-se-commerce-arch/orderstorageservice:latest
+    ports:
+     - "50051:50051"
+  processdefservice:
+    image: gcr.io/sap-se-commerce-arch/processdefservice:latest
+    ports:
+     - "50052:50051"

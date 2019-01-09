@@ -6,22 +6,15 @@ option go_package = "github.com/albertsen/lessworkflow/gen/proto/actiondata";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
+import "proto/orderdata/orderdata.proto";
+import "proto/processdef/processdef.proto";
 
-message Request {
+message Action {
   string name = 1;
   string process_id = 2;
   int32 retry_count = 3;
   google.protobuf.Timestamp delay_util = 4;
-  Payload payload = 5;
+  lessworkflow.orderdata.Order order = 5;
+  lessworkflow.processdef.ProcessDef processDef = 6;
 };
 
-message Response {
-  string result = 1;
-  Payload payload = 2;
-};
-
-message Payload {
-  string id = 1;
-  string type = 2;
-  google.protobuf.Any content = 3;
-};

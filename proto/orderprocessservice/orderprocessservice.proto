@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package lessworkflow.orderprocessservice;
+
+option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderprocessservice";
+
+service OrderProcessService {
+    rpc StartProcess(StartProcessRequest) returns (StartProcessResponse) {}
+}
+
+message StartProcessRequest {
+    string process_def_id = 1;
+    string order_id = 2;
+}
+
+message StartProcessResponse {
+    string process_id = 1;
+}

@@ -11,11 +11,7 @@ import (
 type service struct {
 }
 
-func (service *service) DefineProcess(ctx context.Context, req *ops.DefineProcessRequest) (*ops.DefineProcessResponse, error) {
-	return nil, nil
-}
-
-func (service *service) StartProcess(ctx context.Context, req *ops.StartProcessRequest) (*ops.StartProcessRequest, error) {
+func (service *service) StartProcess(ctx context.Context, req *ops.StartProcessRequest) (*ops.StartProcessResponse, error) {
 	return nil, nil
 }
 

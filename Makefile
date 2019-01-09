@@ -2,7 +2,7 @@ GOCMD=go
 GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
 GOCLEAN=$(GOCMD) clean
-GOTEST=$(GOCMD) test
+GOTEST=$(GOCMD) test -v -count=1
 GOGET=$(GOCMD) get
 BUILD_DIR=build
 GEN_DIR=gen
@@ -15,13 +15,14 @@ PKGPATH=github.com/albertsen/lessworkflow
 
 
 all: build
-build: protobuf orderstorageservice  processdefservice # order processengine actionhandler orderservice orderstorageervice
+build: protobuf orderstorageservice orderprocessservice processdefservice # order processengine actionhandler orderservice orderstorageervice
 
 protobuf:
 	mkdir -p $(GEN_DIR)
 	$(PROGEN) ./proto/actiondata/*.proto
 	$(PROGEN) ./proto/orderdata/*.proto
 	$(PROGEN) ./proto/orderstorageservice/*.proto
+	$(PROGEN) ./proto/orderprocessservice/*.proto
 	$(PROGEN) ./proto/processdef/*.proto
 	$(PROGEN) ./proto/processdefservice/*.proto
 
@@ -33,14 +34,18 @@ actionhandler:
 	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v $(PKGPATH)/cmd/actionhandler
 orderstorageservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v $(PKGPATH)/cmd/orderstorageservice
+orderprocessservice:
+	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v $(PKGPATH)/cmd/orderprocessservice
 processdefservice:
 	$(GOBUILD) -o $(BUILD_DIR)/processdefservice -v $(PKGPATH)/cmd/processdefservice
 
 test: test-orderstorageservice test-processdefservice
 test-orderstorageservice:
-	$(GOTEST) -count=1 $(PKGPATH)/cmd/orderstorageservice
+	$(GOTEST) $(PKGPATH)/cmd/orderstorageservice
+test-orderprocessservice:
+	$(GOTEST) $(PKGPATH)/cmd/orderprocessservice
 test-processdefservice:
-	$(GOTEST) -count=1 $(PKGPATH)/cmd/processdefservice
+	$(GOTEST) $(PKGPATH)/cmd/processdefservice
 
 patch:
 	cp -rv patch/* ${GOPATH}/src
@@ -66,12 +71,14 @@ build-linux: export BUILD_DIR=build/linux
 build-linux: build
 
 docker-build: build-linux
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processengine:latest -f infra/docker/processengine/Dockerfile .
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/actionhandler:latest -f infra/docker/actionhandler/Dockerfile .
+	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/orderstorageservice:latest -f infra/docker/orderstorageservice/Dockerfile .
+	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processdefservice:latest -f infra/docker/processdefservice/Dockerfile .
+	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/orderprocessservice:latest -f infra/docker/orderprocessservice/Dockerfile .
 
 docker-push: docker-build
-	$(DOCKER) push gcr.io/sap-se-commerce-arch/processengine:latest
-	$(DOCKER) push gcr.io/sap-se-commerce-arch/actionhandler:latest
+	$(DOCKER) push gcr.io/sap-se-commerce-arch/orderstorageservice:latest
+	$(DOCKER) push gcr.io/sap-se-commerce-arch/processdefservice:latest
+	$(DOCKER) push gcr.io/sap-se-commerce-arch/orderprocessservice:latest
 
 deploy: docker-push
 	$(KUBECTL) -n lw apply -f infra/k8s/lessworkflow/deployments/processengine.yaml
