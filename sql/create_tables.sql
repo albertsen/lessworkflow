@@ -11,7 +11,5 @@ CREATE TABLE orders (
 CREATE TABLE process_defs (
     id                  VARCHAR(100) PRIMARY KEY,
     description         text,
-    time_created        timestamp DEFAULT CURRENT_TIMESTAMP,
-    time_updated        timestamp DEFAULT CURRENT_TIMESTAMP,
-    details             jsonb
+    workflow            jsonb
 )

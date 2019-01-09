@@ -9,8 +9,8 @@ import "proto/processdef/processdef.proto";
 service ProcessDefService {
   rpc CreateProcessDef(CreateProcessDefRequest) returns (CreateProcessDefResponse) {}
   rpc UpdateProcessDef(UpdateProcessDefRequest) returns (UpdateProcessDefResponse) {}
-  rpc GetProcessDef(UpdateProcessDefRequest) returns (GetProcessDefResponse) {}
-  rpc DeleteProcessDef(UpdateProcessDefRequest) returns (GetProcessDefResponse) {}
+  rpc GetProcessDef(GetProcessDefRequest) returns (GetProcessDefResponse) {}
+  rpc DeleteProcessDef(DeleteProcessDefRequest) returns (DeleteProcessDefResponse) {}
   
 }
 

@@ -15,15 +15,15 @@ PKGPATH=github.com/albertsen/lessworkflow
 
 
 all: build
-build: protobuf orderstorageservice  orderprocessservice # order processengine actionhandler orderservice orderstorageervice
+build: protobuf orderstorageservice  processdefservice # order processengine actionhandler orderservice orderstorageervice
 
 protobuf:
 	mkdir -p $(GEN_DIR)
 	$(PROGEN) ./proto/actiondata/*.proto
 	$(PROGEN) ./proto/orderdata/*.proto
 	$(PROGEN) ./proto/orderstorageservice/*.proto
-	$(PROGEN) ./proto/orderprocessservice/*.proto
 	$(PROGEN) ./proto/processdef/*.proto
+	$(PROGEN) ./proto/processdefservice/*.proto
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order
@@ -31,13 +31,16 @@ processengine:
 	$(GOBUILD) -o $(BUILD_DIR)/processengine -v $(PKGPATH)/cmd/processengine
 actionhandler:
 	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v $(PKGPATH)/cmd/actionhandler
-orderprocessservice:
-	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v $(PKGPATH)/cmd/orderprocessservice
 orderstorageservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v $(PKGPATH)/cmd/orderstorageservice
+processdefservice:
+	$(GOBUILD) -o $(BUILD_DIR)/processdefservice -v $(PKGPATH)/cmd/processdefservice
 
-test:
+test: test-orderstorageservice test-processdefservice
+test-orderstorageservice:
 	$(GOTEST) -count=1 $(PKGPATH)/cmd/orderstorageservice
+test-processdefservice:
+	$(GOTEST) -count=1 $(PKGPATH)/cmd/processdefservice
 
 patch:
 	cp -rv patch/* ${GOPATH}/src

@@ -2,7 +2,6 @@ package orderdao
 
 import (
 	"log"
-	"time"
 
 	pd "github.com/albertsen/lessworkflow/gen/proto/processdef"
 	dbConn "github.com/albertsen/lessworkflow/pkg/db/conn"
@@ -16,10 +15,6 @@ type processDefDTO struct {
 	tableName   struct{} `sql:"process_defs"`
 	ID          string
 	Description string
-	TimeCreated *time.Time
-	TimeUpdated *time.Time
-	Version     int32
-	Status      string
 	Workflow    string
 }
 
@@ -56,9 +51,6 @@ func CreateProcessDef(processDef *pd.ProcessDef) (*pd.ProcessDef, error) {
 		return nil, status.New(codes.InvalidArgument, "No procesess definition ID provided").Err()
 	}
 	processDefDTO, err := newProcessDefDTO(processDef)
-	now := time.Now()
-	processDefDTO.TimeCreated = &now
-	processDefDTO.TimeUpdated = &now
 	if err = dbConn.DB().Insert(processDefDTO); err != nil {
 		log.Printf("ERROR inserting process definition into DB: %s", err)
 		return nil, err

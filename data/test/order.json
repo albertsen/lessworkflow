@@ -1,32 +1,32 @@
 {
     "details": {
         "ordered": {
-            "total_price": {
+            "totalPrice": {
                 "value": 1500,
                 "currency": "EUR"
             },
-            "line_items": [{
-                    "product_id": "augustiner",
-                    "product_description": "Augustiner Helles",
+            "lineItems": [{
+                    "productId": "augustiner",
+                    "productDescription": "Augustiner Helles",
                     "count": 5,
-                    "item_price": {
+                    "itemPrice": {
                         "value": 200,
                         "currency": "EUR"
                     },
-                    "total_price": {
+                    "totalPrice": {
                         "value": 1000,
                         "currency": "EUR"
                     }
                 },
                 {
-                    "product_id": "alagashBlack",
-                    "product_description": "Alagash Black",
+                    "productId": "alagashBlack",
+                    "productDescription": "Alagash Black",
                     "count": 2,
-                    "item_price": {
+                    "itemPrice": {
                         "value": 250,
                         "currency": "EUR"
                     },
-                    "total_price": {
+                    "totalPrice": {
                         "value": 500,
                         "currency": "EUR"
                     }
