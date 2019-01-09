@@ -12,6 +12,7 @@ DOCKER=docker
 PROTOC=protoc
 PROGEN=$(PROTOC) --go_out=plugins=grpc:$(PROTO_OUT_DIR)
 PKGPATH=github.com/albertsen/lessworkflow
+PSQL=psql -h localhost -p 5432
 
 
 all: build
@@ -51,12 +52,12 @@ patch:
 	cp -rv patch/* ${GOPATH}/src
 
 createdb:
-	psql postgres -f sql/create_database.sql 
-	psql lessworkflow -f sql/create_users.sql
-	psql -U lwadmin lessworkflow -f sql/create_tables.sql
+	$(PSQL) -U postgres postgres -f sql/create_database.sql 
+	$(PSQL) -U postgres lessworkflow -f sql/create_users.sql
+	$(PSQL) -U lwadmin lessworkflow -f sql/create_tables.sql
 
 dropdb:
-	psql postgres -c "DROP DATABASE lessworkflow"
+	$(PSQL) -U postgres postgres -c "DROP DATABASE lessworkflow"
 
 clean: 
 	$(GOCLEAN)
@@ -70,7 +71,7 @@ build-linux: export GOARCH=amd64
 build-linux: export BUILD_DIR=build/linux
 build-linux: build
 
-docker-build: build-linux
+docker: build-linux
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/orderstorageservice:latest -f infra/docker/orderstorageservice/Dockerfile .
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processdefservice:latest -f infra/docker/processdefservice/Dockerfile .
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/orderprocessservice:latest -f infra/docker/orderprocessservice/Dockerfile .

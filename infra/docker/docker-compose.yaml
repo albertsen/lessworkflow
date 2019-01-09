@@ -2,9 +2,15 @@ version: '3'
 services:
   orderstorageservice:
     image: gcr.io/sap-se-commerce-arch/orderstorageservice:latest
+    environment:
+      - DB_ADDR=postgres:5432
     ports:
-     - "50051:50051"
-  processdefservice:
-    image: gcr.io/sap-se-commerce-arch/processdefservice:latest
+      - "50051:50051"
+    depends_on: 
+      - postgres
+  postgres:
+    image: postgres
+    volumes:
+      - /private/var/lib/postgres:/var/lib/postgresql/data
     ports:
-     - "50052:50051"
+      - "5432:5432"
