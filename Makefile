@@ -1,5 +1,4 @@
 BUILD_DIR=build
-GEN_DIR=gen
 PKGPATH=github.com/albertsen/lessworkflow
 
 GOCMD=go
@@ -8,10 +7,6 @@ GOTEST=$(GOCMD) test
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test -v -count=1
 GOGET=$(GOCMD) get
-
-PROTO_OUT_DIR=${GOPATH}/src
-PROTOC=protoc
-PROGEN=$(PROTOC) --go_out=plugins=grpc:$(PROTO_OUT_DIR)
 
 KUBECTL=kubectl
 
@@ -24,32 +19,18 @@ DB_NAME=lessworkflow
 
 
 all: build
-build: protobuf documentservice
+build: documentservice
 
-protobuf:
-	mkdir -p $(GEN_DIR)
-	$(PROGEN) ./proto/action/*.proto
-	$(PROGEN) ./proto/order/*.proto
-	$(PROGEN) ./proto/processdef/*.proto
-	$(PROGEN) ./proto/document/*.proto
-	$(PROGEN) ./proto/documentservice/*.proto
-
-order:
-	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order
-processengine:
-	$(GOBUILD) -o $(BUILD_DIR)/processengine -v $(PKGPATH)/cmd/processengine
-actionhandler:
-	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v $(PKGPATH)/cmd/actionhandler
 documentservice:
 	$(GOBUILD) -o $(BUILD_DIR)/documentservice -v $(PKGPATH)/cmd/documentservice
-orderprocessservice:
-	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v $(PKGPATH)/cmd/orderprocessservice
-processdefservice:
-	$(GOBUILD) -o $(BUILD_DIR)/processdefservice -v $(PKGPATH)/cmd/processdefservice
 
 test: cleardb test-documentservice
 test-documentservice:
 	$(GOTEST) $(PKGPATH)/cmd/documentservice
+
+import-sample-data:
+	curl --header "Content-Type: application/json" -vX POST -d @./data/sample/order.json http://localhost:8000/documents/orders
+	curl --header "Content-Type: application/json" -vX POST -d @./data/sample/process.json http://localhost:8000/documents/processdefs
 
 createdb:
 	$(PSQL) -U postgres postgres -f sql/create_database.sql 
@@ -66,7 +47,6 @@ cleardb:
 clean: 
 	$(GOCLEAN)
 	rm -rf $(BUILD_DIR)
-	rm -rf $(GEN_DIR)
 
 # Cross compilation
 build-linux: export CGO_ENABLED=0
@@ -86,33 +66,3 @@ docker-compose-down:
 
 docker-compose-restart-services: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice
-
-
-docker-push: docker-build
-	$(DOCKER) push gcr.io/sap-se-commerce-arch/orderstorageservice:latest
-	$(DOCKER) push gcr.io/sap-se-commerce-arch/processdefservice:latest
-	$(DOCKER) push gcr.io/sap-se-commerce-arch/orderprocessservice:latest
-
-deploy: docker-push
-	$(KUBECTL) -n lw apply -f infra/k8s/lessworkflow/deployments/processengine.yaml
-	$(KUBECTL) -n lw apply -f infra/k8s/lessworkflow/deployments/actionhandler.yaml
-
-delete:
-	$(KUBECTL) -n lw delete --ignore-not-found=true -f infra/k8s/lessworkflow/deployments/processengine.yaml
-	$(KUBECTL) -n lw delete --ignore-not-found=true -f infra/k8s/lessworkflow/deployments/actionhandler.yaml
-
-redeploy: delete deploy
-
-setup-kube:
-	$(KUBECTL) apply -f https://raw.githubusercontent.com/stakater/Reloader/master/deployments/kubernetes/reloader.yaml
-	$(KUBECTL) create clusterrolebinding cluster-admin-binding --clusterrole=cluster-admin --user=$(gcloud config get-value core/account)
-	$(KUBECTL) -n nats apply -f infra/k8s/nats/service-account.yaml
-	$(KUBECTL) -n nats apply -f https://raw.githubusercontent.com/nats-io/nats-operator/master/deploy/role.yaml
-	$(KUBECTL) -n nats apply -f https://raw.githubusercontent.com/nats-io/nats-operator/master/deploy/deployment.yaml
-	$(KUBECTL) -n nats apply -f infra/k8s/nats/cluster.yaml
-
-cleanup-kube:
-	$(KUBECTL) -n nats delete --ignore-not-found=true -f infra/k8s/nats/cluster.yaml
-	$(KUBECTL) -n nats delete --ignore-not-found=true -f https://raw.githubusercontent.com/nats-io/nats-operator/master/deploy/deployment.yaml
-	$(KUBECTL) -n nats delete --ignore-not-found=true -f https://raw.githubusercontent.com/nats-io/nats-operator/master/deploy/role.yaml
-	$(KUBECTL) -n nats delete --ignore-not-found=true -f infra/k8s/nats/service-account.yaml

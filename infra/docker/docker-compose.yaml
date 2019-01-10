@@ -6,7 +6,7 @@ services:
     environment:
       - DB_ADDR=postgres:5432
     ports:
-      - "50051:50051"
+      - "8000:8000"
     depends_on: 
       - postgres
   postgres:

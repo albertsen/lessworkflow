@@ -1,3 +1,0 @@
-#!/bin/bash
-echo "Starting up port forward for NATS (4222)"
-nohup kubectl port-forward svc/nats-cluster 4222:4222 >> /tmp/kubectl-portforward.log 2>&1 &

@@ -4,6 +4,6 @@ CREATE TABLE documents (
     version             INTEGER NOT NULL,
     time_created        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     time_updated        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data                JSONB,
+    content             JSONB,
     PRIMARY KEY         (id, type)
 );

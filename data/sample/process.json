@@ -1,0 +1,55 @@
+{
+    "id": "fulfilorder",
+    "type": "processdefs",
+    "content": {
+        "description": "Example order fulfilment process",
+        "workflow": {
+            "handlers": {
+                "createOrder": {
+                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/createOrder"
+                },
+                "capturePayment": {
+                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/capturePayment"
+                },
+                "splitOrder": {
+                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/splitOrder"
+                },
+                "error": {
+                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/error"
+                },
+                "done": {
+                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/done"
+                }
+            },
+            "actions": {
+                "createOrder": {
+                    "handler": "createOrder",
+                    "transitions": {
+                        "CREATED": "capturePayment",
+                        "ERROR": "error"
+                    }
+                },
+                "capturePayment": {
+                    "handler": "capturePayment",
+                    "transitions": {
+                        "PAYMENT_CAPTURED": "splitOrder",
+                        "ERROR": "error"
+                    }
+                },
+                "splitOrder": {
+                    "handler": "splitOrder",
+                    "transitions": {
+                        "ORDER_SPLIT": "done",
+                        "ERROR": "error"
+                    }
+                },
+                "error": {
+                    "handler": "error"
+                },
+                "done": {
+                    "handler": "done"
+                }
+            }
+        }
+    }
+}
