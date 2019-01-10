@@ -5,8 +5,9 @@ services:
     restart: always
     environment:
       - DB_ADDR=postgres:5432
+      - LISTEN_ADDR=:80
     ports:
-      - "8000:8000"
+      - "8000:80"
     depends_on: 
       - postgres
   postgres:

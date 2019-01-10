@@ -10,15 +10,11 @@ import (
 
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
 	dbConn "github.com/albertsen/lessworkflow/pkg/db/conn"
+	httpUtil "github.com/albertsen/lessworkflow/pkg/net/http/util"
 	"github.com/go-pg/pg"
-	uuid "github.com/satori/go.uuid"
-
 	"github.com/gorilla/mux"
+	uuid "github.com/satori/go.uuid"
 )
-
-type errorMessage struct {
-	Message string `json:"message"`
-}
 
 func main() {
 	router := mux.NewRouter()
@@ -40,23 +36,23 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 	docType := mux.Vars(r)["type"]
 	var doc doc.Document
 	if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
-		httpError(w, http.StatusUnprocessableEntity, err)
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if doc.Type == "" {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Document does not have a type. Should be: %s", docType))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Document does not have a type. Should be: %s", docType))
 		return
 	}
 	if doc.Type != docType {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Type of provided document [%s] does not match type provided in URL [%s]", doc.Type, docType))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Type of provided document [%s] does not match type provided in URL [%s]", doc.Type, docType))
 		return
 	}
 	if doc.Version > 0 {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("New document cannot have a version > 0: %s", doc.Version))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("New document cannot have a version > 0: %s", doc.Version))
 	}
 	if doc.ID == "" {
 		if uuid, err := uuid.NewV4(); err != nil {
-			httpError(w, http.StatusInternalServerError, err)
+			httpUtil.SendError(w, http.StatusInternalServerError, err)
 			return
 		} else {
 			doc.ID = uuid.String()
@@ -69,13 +65,13 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 	if err := dbConn.DB().Insert(&doc); err != nil {
 		pgError, ok := err.(pg.Error)
 		if ok && pgError.IntegrityViolation() {
-			httpError(w, http.StatusConflict, fmt.Sprintf("Document already exists with ID: %s", doc.ID))
+			httpUtil.SendError(w, http.StatusConflict, fmt.Sprintf("Document already exists with ID: %s", doc.ID))
 		} else {
-			httpError(w, http.StatusInternalServerError, err)
+			httpUtil.SendError(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
-	httpResponse(w, http.StatusCreated, doc)
+	httpUtil.SendResponse(w, http.StatusCreated, doc)
 }
 
 func UpdateDocument(w http.ResponseWriter, r *http.Request) {
@@ -83,40 +79,40 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 	docID := mux.Vars(r)["id"]
 	var doc doc.Document
 	if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
-		httpError(w, http.StatusUnprocessableEntity, err)
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 	if doc.Type == "" {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Document does not have a type. Should be: %s", docType))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Document does not have a type. Should be: %s", docType))
 		return
 	}
 	if doc.Type != docType {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Type of provided document [%s] does not match type provided in URL [%s]", doc.Type, docType))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Type of provided document [%s] does not match type provided in URL [%s]", doc.Type, docType))
 		return
 	}
 	if doc.ID == "" {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Document does not have an ID. Should be: %s", docID))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("Document does not have an ID. Should be: %s", docID))
 		return
 	}
 	if doc.ID != docID {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("ID of provided document [%s] does not match ID provided in URL [%s]", doc.ID, docID))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("ID of provided document [%s] does not match ID provided in URL [%s]", doc.ID, docID))
 		return
 	}
 	if doc.Version <= 0 {
-		httpError(w, http.StatusUnprocessableEntity, fmt.Sprintf("No or invalid version of document [%d]", doc.Version))
+		httpUtil.SendError(w, http.StatusUnprocessableEntity, fmt.Sprintf("No or invalid version of document [%d]", doc.Version))
 		return
 	}
 	now := time.Now()
 	doc.TimeUpdated = &now
 	if err := dbConn.DB().Update(&doc); err != nil {
 		if err == pg.ErrNoRows {
-			httpError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
+			httpUtil.SendError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
 		} else {
-			httpError(w, http.StatusInternalServerError, err)
+			httpUtil.SendError(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
-	httpOK(w, doc)
+	httpUtil.SendOK(w, doc)
 }
 
 func GetDocument(w http.ResponseWriter, r *http.Request) {
@@ -128,13 +124,13 @@ func GetDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := dbConn.DB().Select(doc); err != nil {
 		if err == pg.ErrNoRows {
-			httpError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
+			httpUtil.SendError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
 		} else {
-			httpError(w, http.StatusInternalServerError, err)
+			httpUtil.SendError(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
-	httpOK(w, doc)
+	httpUtil.SendOK(w, doc)
 }
 
 func DeleteDocument(w http.ResponseWriter, r *http.Request) {
@@ -146,28 +142,11 @@ func DeleteDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := dbConn.DB().Delete(doc); err != nil {
 		if err == pg.ErrNoRows {
-			httpError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
+			httpUtil.SendError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
 		} else {
-			httpError(w, http.StatusInternalServerError, err)
+			httpUtil.SendError(w, http.StatusInternalServerError, err)
 		}
 		return
 	}
-	httpOK(w, nil)
-}
-
-func httpOK(w http.ResponseWriter, data interface{}) {
-	httpResponse(w, http.StatusOK, data)
-}
-
-func httpError(w http.ResponseWriter, status int, message interface{}) {
-	messageString := fmt.Sprintf("%s", message)
-	httpResponse(w, status, errorMessage{Message: messageString})
-}
-
-func httpResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(statusCode)
-	if data != nil {
-		json.NewEncoder(w).Encode(data)
-	}
+	httpUtil.SendOK(w, nil)
 }
