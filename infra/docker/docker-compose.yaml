@@ -1,7 +1,7 @@
 version: '3'
 services:
-  orderstorageservice:
-    image: gcr.io/sap-se-commerce-arch/orderstorageservice:latest
+  documentservice:
+    image: gcr.io/sap-se-commerce-arch/documentservice:latest
     environment:
       - DB_ADDR=postgres:5432
     ports:

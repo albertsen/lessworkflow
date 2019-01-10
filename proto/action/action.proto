@@ -1,12 +1,11 @@
 syntax = "proto3";
 
-package lessworkflow.actiondata;
+package lessworkflow.action;
 
-option go_package = "github.com/albertsen/lessworkflow/gen/proto/actiondata";
+option go_package = "github.com/albertsen/lessworkflow/gen/proto/action";
 
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/any.proto";
-import "proto/orderdata/orderdata.proto";
 import "proto/processdef/processdef.proto";
 
 message Action {
@@ -14,7 +13,7 @@ message Action {
   string process_id = 2;
   int32 retry_count = 3;
   google.protobuf.Timestamp delay_util = 4;
-  lessworkflow.orderdata.Order order = 5;
-  lessworkflow.processdef.ProcessDef processDef = 6;
+  lessworkflow.processdef.ProcessDef processDef = 5;
+  google.protobuf.Any payload = 6;
 };
 

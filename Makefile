@@ -16,16 +16,15 @@ PSQL=psql -h localhost -p 5432
 
 
 all: build
-build: protobuf orderstorageservice orderprocessservice processdefservice # order processengine actionhandler orderservice orderstorageervice
+build: protobuf documentservice
 
 protobuf:
 	mkdir -p $(GEN_DIR)
-	$(PROGEN) ./proto/actiondata/*.proto
-	$(PROGEN) ./proto/orderdata/*.proto
-	$(PROGEN) ./proto/orderstorageservice/*.proto
-	$(PROGEN) ./proto/orderprocessservice/*.proto
+	$(PROGEN) ./proto/action/*.proto
+	$(PROGEN) ./proto/order/*.proto
 	$(PROGEN) ./proto/processdef/*.proto
-	$(PROGEN) ./proto/processdefservice/*.proto
+	$(PROGEN) ./proto/document/*.proto
+	$(PROGEN) ./proto/documentservice/*.proto
 
 order:
 	$(GOBUILD) -o $(BUILD_DIR)/order -v cmd/order
@@ -33,23 +32,16 @@ processengine:
 	$(GOBUILD) -o $(BUILD_DIR)/processengine -v $(PKGPATH)/cmd/processengine
 actionhandler:
 	$(GOBUILD) -o $(BUILD_DIR)/actionhandler -v $(PKGPATH)/cmd/actionhandler
-orderstorageservice:
-	$(GOBUILD) -o $(BUILD_DIR)/orderstorageservice -v $(PKGPATH)/cmd/orderstorageservice
+documentservice:
+	$(GOBUILD) -o $(BUILD_DIR)/documentservice -v $(PKGPATH)/cmd/documentservice
 orderprocessservice:
 	$(GOBUILD) -o $(BUILD_DIR)/orderprocessservice -v $(PKGPATH)/cmd/orderprocessservice
 processdefservice:
 	$(GOBUILD) -o $(BUILD_DIR)/processdefservice -v $(PKGPATH)/cmd/processdefservice
 
-test: test-orderstorageservice test-processdefservice
-test-orderstorageservice:
-	$(GOTEST) $(PKGPATH)/cmd/orderstorageservice
-test-orderprocessservice:
-	$(GOTEST) $(PKGPATH)/cmd/orderprocessservice
-test-processdefservice:
-	$(GOTEST) $(PKGPATH)/cmd/processdefservice
-
-patch:
-	cp -rv patch/* ${GOPATH}/src
+test: test-documentservice
+test-documentservice:
+	$(GOTEST) $(PKGPATH)/cmd/documentservice
 
 createdb:
 	$(PSQL) -U postgres postgres -f sql/create_database.sql 
@@ -72,9 +64,7 @@ build-linux: export BUILD_DIR=build/linux
 build-linux: build
 
 docker: build-linux
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/orderstorageservice:latest -f infra/docker/orderstorageservice/Dockerfile .
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processdefservice:latest -f infra/docker/processdefservice/Dockerfile .
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/orderprocessservice:latest -f infra/docker/orderprocessservice/Dockerfile .
+	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/documentservice:latest -f infra/docker/documentservice/Dockerfile .
 
 docker-push: docker-build
 	$(DOCKER) push gcr.io/sap-se-commerce-arch/orderstorageservice:latest

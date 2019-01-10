@@ -4,13 +4,14 @@ package lessworkflow.orderprocessservice;
 
 option go_package = "github.com/albertsen/lessworkflow/gen/proto/orderprocessservice";
 
-service OrderProcessService {
+service ProcessService {
     rpc StartProcess(StartProcessRequest) returns (StartProcessResponse) {}
 }
 
 message StartProcessRequest {
     string process_def_id = 1;
-    string order_id = 2;
+    string document_id = 2;
+    string document_type = 3;
 }
 
 message StartProcessResponse {

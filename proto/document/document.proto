@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package lessworkflow.document;
+
+option go_package = "github.com/albertsen/lessworkflow/gen/proto/document";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/any.proto";
+
+message Document {
+    string id = 1;
+    string type = 2;
+    google.protobuf.Timestamp time_created = 3;
+    google.protobuf.Timestamp time_updated = 4;
+    int32 version = 5;
+    google.protobuf.Any data = 6;
+}  
