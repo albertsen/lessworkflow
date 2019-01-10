@@ -22,13 +22,20 @@ type documentDTO struct {
 	TimeCreated *time.Time
 	TimeUpdated *time.Time
 	Version     int32
-	Status      string
 	Data        string
 }
 
 func newDocumentDTO(doc *doc.Document) (*documentDTO, error) {
+	var any ptypes.DynamicAny
+	err := ptypes.UnmarshalAny(doc.Data, &any)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("Data: %v", doc.Data)
+	log.Printf("Any message: %v", any.Message)
 	marshaller := jsonpb.Marshaler{}
-	json, err := marshaller.MarshalToString(doc.Data)
+	json, err := marshaller.MarshalToString(any.Message)
+	log.Printf("JSON: %s", json)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +102,7 @@ func UpdateDocument(doc *doc.Document) (*doc.Document, error) {
 	}
 	if err := dbConn.DB().Update(docDTO); err != nil {
 		if err == pg.ErrNoRows {
-			return nil, status.New(codes.NotFound, "Order not found").Err()
+			return nil, status.New(codes.NotFound, "Document not found").Err()
 		}
 		log.Printf("Failed to update document: Error updating document in DB - %s", err)
 		return nil, err
@@ -103,16 +110,16 @@ func UpdateDocument(doc *doc.Document) (*doc.Document, error) {
 	return doc, nil
 }
 
-func GetDocument(typeID string, docID string) (*doc.Document, error) {
-	if typeID == "" {
+func GetDocument(Type string, DocID string) (*doc.Document, error) {
+	if Type == "" {
 		return nil, status.New(codes.InvalidArgument, "Failed to get document: No type provided").Err()
 	}
-	if docID == "" {
+	if DocID == "" {
 		return nil, status.New(codes.InvalidArgument, "Failed to get document: No document ID provided").Err()
 	}
 	documentDTO := documentDTO{
-		ID:   docID,
-		Type: typeID,
+		ID:   DocID,
+		Type: Type,
 	}
 	if err := dbConn.DB().Select(&documentDTO); err != nil {
 		if err == pg.ErrNoRows {
@@ -129,16 +136,16 @@ func GetDocument(typeID string, docID string) (*doc.Document, error) {
 	return order, nil
 }
 
-func DeleteDocument(typeID string, docID string) error {
-	if typeID == "" {
+func DeleteDocument(Type string, DocID string) error {
+	if Type == "" {
 		return status.New(codes.InvalidArgument, "Failed to delete document: No type provided").Err()
 	}
-	if docID == "" {
+	if DocID == "" {
 		return status.New(codes.InvalidArgument, "Failed to delete document: No document ID provided").Err()
 	}
 	documentDTO := documentDTO{
-		ID:   docID,
-		Type: typeID,
+		ID:   DocID,
+		Type: Type,
 	}
 	if err := dbConn.DB().Delete(&documentDTO); err != nil {
 		log.Printf("Failed to delete document: Error deleting document from DB - %s", err)

@@ -30,7 +30,7 @@ func (service *service) UpdateDocument(ctx context.Context, req *ds.UpdateDocume
 }
 
 func (service *service) GetDocument(ctx context.Context, req *ds.GetDocumentRequest) (*ds.GetDocumentResponse, error) {
-	doc, err := dao.GetDocument(req.TypeId, req.DocumentId)
+	doc, err := dao.GetDocument(req.Type, req.DocumentId)
 	if err != nil {
 		return &ds.GetDocumentResponse{}, err
 	}
@@ -38,7 +38,7 @@ func (service *service) GetDocument(ctx context.Context, req *ds.GetDocumentRequ
 }
 
 func (service *service) DeleteDocument(ctx context.Context, req *ds.DeleteDocumentRequest) (*ds.DeleteDocumentResponse, error) {
-	err := dao.DeleteDocument(req.TypeId, req.DocumentId)
+	err := dao.DeleteDocument(req.Type, req.DocumentId)
 	if err != nil {
 		return &ds.DeleteDocumentResponse{}, err
 	}

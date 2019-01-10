@@ -67,7 +67,7 @@ func TestCRUD(t *testing.T) {
 	refDoc.TimeCreated = createdDoc.TimeCreated
 	refDoc.TimeUpdated = createdDoc.TimeUpdated
 	refDoc.Version = createdDoc.Version
-	getDocResponse, err := client.GetDocument(ctx, &ds.GetDocumentRequest{DocumentId: createDocResponse.Document.Id})
+	getDocResponse, err := client.GetDocument(ctx, &ds.GetDocumentRequest{DocumentId: refDoc.Id, Type: refDoc.Type})
 	if err != nil {
 		t.Error(err)
 	}
@@ -97,7 +97,7 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	getDocResponse, err = client.GetDocument(ctx, &ds.GetDocumentRequest{DocumentId: refDoc.Id})
+	getDocResponse, err = client.GetDocument(ctx, &ds.GetDocumentRequest{DocumentId: refDoc.Id, Type: refDoc.Type})
 	if err != nil {
 		t.Error(err)
 	}
@@ -109,7 +109,7 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	getDocResponse, err = client.GetDocument(ctx, &ds.GetDocumentRequest{DocumentId: refDoc.Id})
+	getDocResponse, err = client.GetDocument(ctx, &ds.GetDocumentRequest{DocumentId: refDoc.Id, Type: refDoc.Type})
 	if err != nil {
 		t.Error(err)
 	}

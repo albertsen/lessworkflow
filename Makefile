@@ -1,18 +1,26 @@
+BUILD_DIR=build
+GEN_DIR=gen
+PKGPATH=github.com/albertsen/lessworkflow
+
 GOCMD=go
 GOBUILD=$(GOCMD) build
 GOTEST=$(GOCMD) test
 GOCLEAN=$(GOCMD) clean
 GOTEST=$(GOCMD) test -v -count=1
 GOGET=$(GOCMD) get
-BUILD_DIR=build
-GEN_DIR=gen
+
 PROTO_OUT_DIR=${GOPATH}/src
-KUBECTL=kubectl
-DOCKER=docker
 PROTOC=protoc
 PROGEN=$(PROTOC) --go_out=plugins=grpc:$(PROTO_OUT_DIR)
-PKGPATH=github.com/albertsen/lessworkflow
+
+KUBECTL=kubectl
+
+DOCKER=docker
+DOCKER_COMPOSE=docker-compose
+DOCKER_DIR=./infra/docker
+
 PSQL=psql -h localhost -p 5432
+DB_NAME=lessworkflow
 
 
 all: build
@@ -39,17 +47,21 @@ orderprocessservice:
 processdefservice:
 	$(GOBUILD) -o $(BUILD_DIR)/processdefservice -v $(PKGPATH)/cmd/processdefservice
 
-test: test-documentservice
+test: cleardb test-documentservice
 test-documentservice:
 	$(GOTEST) $(PKGPATH)/cmd/documentservice
 
 createdb:
 	$(PSQL) -U postgres postgres -f sql/create_database.sql 
-	$(PSQL) -U postgres lessworkflow -f sql/create_users.sql
-	$(PSQL) -U lwadmin lessworkflow -f sql/create_tables.sql
+	$(PSQL) -U postgres $(DB_NAME) -f sql/create_users.sql
+	$(PSQL) -U lwadmin $(DB_NAME) -f sql/create_tables.sql
 
 dropdb:
 	$(PSQL) -U postgres postgres -c "DROP DATABASE lessworkflow"
+
+cleardb:
+	$(PSQL) -U postgres $(DB_NAME) -c "DELETE FROM documents"
+
 
 clean: 
 	$(GOCLEAN)
@@ -65,6 +77,16 @@ build-linux: build
 
 docker: build-linux
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/documentservice:latest -f infra/docker/documentservice/Dockerfile .
+
+docker-compose-up: docker
+	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) up --remove-orphans
+
+docker-compose-down:
+	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) down
+
+docker-compose-restart-services: docker
+	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice
+
 
 docker-push: docker-build
 	$(DOCKER) push gcr.io/sap-se-commerce-arch/orderstorageservice:latest
