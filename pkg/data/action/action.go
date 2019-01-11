@@ -7,10 +7,10 @@ import (
 )
 
 type Action struct {
-	Name       string
-	ProcessID  string
-	RetryCount int32
-	DelayUtil  *time.Time
-	ProcessDef *processdef.ProcessDef
-	Payload    interface{}
+	Name       string                 `json:"name"`
+	ProcessID  string                 `json:"processId"`
+	RetryCount int32                  `json:"retryCount"`
+	DelayUtil  *time.Time             `json:"delayUntil"`
+	ProcessDef *processdef.ProcessDef `json:"processDef"`
+	Document   interface{}            `json:"document"`
 }

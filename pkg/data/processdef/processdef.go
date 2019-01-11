@@ -1,21 +1,21 @@
 package processdef
 
 type ProcessDef struct {
-	ID          string
-	Description string
-	Workflow    *ProcessWorkflow
+	Description string           `json:"description,omitempty"`
+	Workflow    *ProcessWorkflow `json:"workflow"`
 }
 
 type ProcessWorkflow struct {
-	Handlers map[string]*HandlerDef
-	Actions  map[string]*ActionDef
+	Handlers map[string]*HandlerDef `json:"handlers"`
+	Actions  map[string]*ActionDef  `json:"actions"`
+	Start    string                 `json:"start,omitempty"`
 }
 
 type HandlerDef struct {
-	UURL string
+	URL string `json:"url"`
 }
 
 type ActionDef struct {
-	Handler     string
-	Transitions map[string]string
+	Handler     string            `json:"handler"`
+	Transitions map[string]string `json:"tansitions"`
 }

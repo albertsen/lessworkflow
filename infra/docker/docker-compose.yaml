@@ -10,6 +10,16 @@ services:
       - "8000:80"
     depends_on: 
       - postgres
+  processservice:
+    image: gcr.io/sap-se-commerce-arch/processservice:latest
+    restart: always
+    environment:
+      - DOCUMENTSERVICE_URL=http://documentservice
+      - LISTEN_ADDR=:80
+    ports:
+      - "8001:80"
+    depends_on: 
+      - documentservice
   postgres:
     image: postgres
     restart: always

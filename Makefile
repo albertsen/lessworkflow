@@ -19,10 +19,13 @@ DB_NAME=lessworkflow
 
 
 all: build
-build: documentservice
+build: documentservice processservice
 
 documentservice:
 	$(GOBUILD) -o $(BUILD_DIR)/documentservice -v $(PKGPATH)/cmd/documentservice
+processservice:
+	$(GOBUILD) -o $(BUILD_DIR)/processservice -v $(PKGPATH)/cmd/processservice
+
 
 test: cleardb test-documentservice
 test-documentservice:
@@ -45,9 +48,9 @@ cleardb:
 
 
 clean: 
-	$(GOCLEAN)
 	rm -rf $(BUILD_DIR)
-
+	$(GOCLEAN)
+	
 # Cross compilation
 build-linux: export CGO_ENABLED=0
 build-linux: export GOOS=linux
@@ -57,6 +60,7 @@ build-linux: build
 
 docker: build-linux
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/documentservice:latest -f infra/docker/documentservice/Dockerfile .
+	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processservice:latest -f infra/docker/processservice/Dockerfile .
 
 docker-compose-up: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) up --remove-orphans
@@ -65,4 +69,4 @@ docker-compose-down:
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) down
 
 docker-compose-restart-services: docker
-	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice
+	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice processservice
