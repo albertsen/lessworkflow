@@ -1,0 +1,4 @@
+{
+    "documentURL": "http://localhost:8000/documents/orders/neworder",
+    "processDefURL": "http://localhost:8000/documents/processdefs/fulfilorder"
+}
