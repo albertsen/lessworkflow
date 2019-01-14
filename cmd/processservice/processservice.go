@@ -13,7 +13,6 @@ import (
 
 	"github.com/albertsen/lessworkflow/pkg/data/action"
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
-	pd "github.com/albertsen/lessworkflow/pkg/data/processdef"
 	uuid "github.com/satori/go.uuid"
 
 	httpUtil "github.com/albertsen/lessworkflow/pkg/net/http/util"
@@ -30,8 +29,9 @@ type startProceessResponse struct {
 }
 
 type result struct {
-	Value interface{}
-	Error error
+	Document   *doc.Document
+	Error      error
+	StatusCode int
 }
 
 var (
@@ -51,18 +51,18 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, router))
 }
 
-func getDocument(URL string, C chan result, Converter func(*doc.Document) (interface{}, error)) {
+func getDocument(URL string, C chan result) {
 	if URL == "" {
 		C <- result{Error: errors.New("No URL provided for document to load")}
 		return
 	}
 	res, err := httpClient.Get(URL)
 	if err != nil {
-		if res != nil && res.StatusCode == http.StatusNotFound {
-			C <- result{}
-			return
+		var statusCode int
+		if res != nil {
+			statusCode = res.StatusCode
 		}
-		C <- result{Error: err}
+		C <- result{Error: err, StatusCode: statusCode}
 		return
 	}
 	defer res.Body.Close()
@@ -74,10 +74,9 @@ func getDocument(URL string, C chan result, Converter func(*doc.Document) (inter
 	var doc doc.Document
 	err = json.Unmarshal(data, &doc)
 	if err != nil {
-		C <- result{Error: errors.New(fmt.Sprintf("Error parsing document from [%s]: %s", URL, err))}
+		C <- result{Error: fmt.Errorf("Error parsing document from [%s]: %s", URL, err)}
 	}
-	value, err := Converter(&doc)
-	C <- result{Value: value, Error: err}
+	C <- result{Document: &doc, Error: err}
 }
 
 func StartProcess(w http.ResponseWriter, r *http.Request) {
@@ -103,49 +102,32 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 	processDefChan := make(chan result)
 	docChan := make(chan result)
 	// Make two parallel calls to the document service
-	go getDocument(startProcReq.ProcessDefURL, processDefChan, func(Doc *doc.Document) (interface{}, error) {
-		return Doc, nil
-	})
-	go getDocument(startProcReq.ProcessDefURL, docChan, func(Doc *doc.Document) (interface{}, error) {
-		var processDef pd.ProcessDef
-		if err := json.Unmarshal(Doc.Content, &processDef); err != nil {
-			return nil, err
-		}
-		return processDef, nil
-	})
-	errorMessages := make([]string, 0)
-	notFound := make([]string, 0)
+	go getDocument(startProcReq.ProcessDefURL, processDefChan)
+	go getDocument(startProcReq.DocumentURL, docChan)
+	erroneousResults := make([]result, 0)
 	for i := 0; i < 2; i++ {
 		select {
 		case processDefRes := <-processDefChan:
 			if processDefRes.Error != nil {
-				errorMessages = append(errorMessages, processDefRes.Error.Error())
+				erroneousResults = append(erroneousResults, processDefRes)
 			} else {
-				processDef := processDefRes.Value.(*pd.ProcessDef)
-				if processDef == nil {
-					notFound = append(errorMessages, fmt.Sprintf("Process definition not found at: %s", startProcReq.ProcessDefURL))
-				} else {
-					action.ProcessDef = processDef
-					action.Name = processDef.Workflow.Start
-				}
+				action.ProcessDef = processDefRes.Document
+				action.Name = "startProcess"
 			}
 		case docRes := <-docChan:
 			if docRes.Error != nil {
-				errorMessages = append(errorMessages, docRes.Error.Error())
+				erroneousResults = append(erroneousResults, docRes)
 			} else {
-				if action.Document == nil {
-					notFound = append(errorMessages, fmt.Sprintf("Document not found at: %s", startProcReq.DocumentURL))
-				}
-				action.Document = docRes.Value.(*doc.Document)
+				action.Document = docRes.Document
 			}
 		}
 	}
-	if len(errorMessages) > 0 {
+	if l := len(erroneousResults); l > 0 {
+		errorMessages := make([]string, l)
+		for i := 0; i < l; i++ {
+			errorMessages[i] = erroneousResults[i].Error.Error()
+		}
 		httpUtil.SendError(w, http.StatusInternalServerError, strings.Join(errorMessages[:], ", "))
-		return
-	}
-	if len(notFound) > 0 {
-		httpUtil.SendError(w, http.StatusNotFound, strings.Join(notFound[:], ", "))
 		return
 	}
 	httpUtil.SendOK(w, action)

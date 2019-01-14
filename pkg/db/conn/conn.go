@@ -15,9 +15,19 @@ func Connect() {
 	if addr == "" {
 		addr = "localhost:5432"
 	}
+	dbName := os.Getenv("DB_NAME")
+	if dbName == "" {
+		dbName = "lessworkflow"
+	}
+	user := os.Getenv("DB_USER")
+	if user == "" {
+		user = "lwadmin"
+	}
+	password := os.Getenv("DB_PASSWORD")
 	db = pg.Connect(&pg.Options{
-		User:     "lwadmin",
-		Database: "lessworkflow",
+		User:     user,
+		Password: password,
+		Database: dbName,
 		Addr:     addr,
 	})
 }
