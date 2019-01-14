@@ -14,11 +14,12 @@ DOCKER=docker
 DOCKER_COMPOSE=docker-compose
 DOCKER_DIR=./infra/docker
 
-PSQL=psql -h localhost -p 5432
+PSQL_HOST=localhost
+PSQL_PORT=5432
+PSQL=psql -h localhost -p $(PSQL_PORT)
 DB_NAME=lessworkflow
 
 
-all: build
 build: documentservice processservice
 
 documentservice:
@@ -32,8 +33,8 @@ test-documentservice:
 	$(GOTEST) $(PKGPATH)/cmd/documentservice
 
 import-sample-data:
-	curl --header "Content-Type: application/json" -vX POST -d @./data/sample/order.json http://localhost:8000/documents/orders
-	curl --header "Content-Type: application/json" -vX POST -d @./data/sample/process.json http://localhost:8000/documents/processdefs
+	curl --header "Content-Type: application/json" -v -d @./data/sample/order.json http://localhost:8000/documents/orders
+	curl --header "Content-Type: application/json" -v -d @./data/sample/process.json http://localhost:8000/documents/processdefs
 
 createdb:
 	$(PSQL) -U postgres postgres -f sql/create_database.sql 
@@ -70,3 +71,8 @@ docker-compose-down:
 
 docker-compose-restart-services: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice processservice
+
+setup:
+	go get -u github.com/go-pg/pg
+	go get -u github.com/gorilla/mux
+	go get -u github.com/satori/go.uuid
