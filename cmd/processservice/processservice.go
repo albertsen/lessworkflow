@@ -26,7 +26,7 @@ type startProcessRequest struct {
 	DocumentType string `json:"documentType"`
 }
 
-type startProceessRespinse struct {
+type startProceessResponse struct {
 	ProcessID string `json:"processId`
 }
 

@@ -3,31 +3,42 @@ package conn
 import (
 	"os"
 
-	"github.com/go-pg/pg"
+	"github.com/streadway/amqp"
 )
 
 var (
-	db *pg.DB
+	conn    *amqp.Connection
+	channel *amqp.Channel
 )
 
-func Connect() {
-	addr := os.Getenv("DB_ADDR")
+func Connect() error {
+	addr := os.Getenv("QUEUE_ADDR")
 	if addr == "" {
-		addr = "localhost:5432"
+		addr = "amqp://guest:guest@localhost:5672/"
 	}
-	db = pg.Connect(&pg.Options{
-		User:     "lwadmin",
-		Database: "lessworkflow",
-		Addr:     addr,
-	})
+	var err error
+	conn, err = amqp.Dial("amqp://guest:guest@localhost:5672/")
+	return err
 }
 
-func Close() {
-	if db != nil {
-		db.Close()
+func Channel(queueName string) (*amqp.Channel, error) {
+	if channel == nil {
+		var err error
+		channel, err = conn.Channel()
+		if err != nil {
+			return nil, err
+		}
 	}
-}
-
-func DB() *pg.DB {
-	return db
+	_, err := channel.QueueDeclare(
+		queueName,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return channel, nil
 }
