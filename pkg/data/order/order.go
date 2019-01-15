@@ -33,17 +33,14 @@ type PaymentDetails struct {
 }
 
 type LineItem struct {
-	ProductId            string
-	ProductDescription   string
-	Count                int32
-	ItemPrice            *MonetaryAmount
-	TotalPrice           *MonetaryAmount
-	ItemTaxes            []*Tax
-	TotalTaxes           []*Tax
-	Properties           map[string]interface{}
-	XXX_NoUnkeyedLiteral struct{}
-	XXX_unrecognized     []byte
-	XXX_sizecache        int32
+	ProductId          string
+	ProductDescription string
+	Count              int32
+	ItemPrice          *MonetaryAmount
+	TotalPrice         *MonetaryAmount
+	ItemTaxes          []*Tax
+	TotalTaxes         []*Tax
+	Properties         map[string]interface{}
 }
 
 type Tax struct {

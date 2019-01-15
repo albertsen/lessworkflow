@@ -28,10 +28,6 @@ processservice:
 	$(GOBUILD) -o $(BUILD_DIR)/processservice -v $(PKGPATH)/cmd/processservice
 
 
-test: cleardb test-documentservice
-test-documentservice:
-	$(GOTEST) $(PKGPATH)/cmd/documentservice
-
 import-sample-data:
 	curl --header "Content-Type: application/json" -v -d @./data/sample/order.json http://localhost:8000/documents/orders
 	curl --header "Content-Type: application/json" -v -d @./data/sample/process.json http://localhost:8000/documents/processdefs
@@ -45,8 +41,15 @@ dropdb:
 	$(PSQL) -U postgres postgres -c "DROP DATABASE lessworkflow"
 
 cleardb:
-	$(PSQL) -U postgres $(DB_NAME) -c "DELETE FROM documents"
+	$(PSQL) -U postgres lessworkflow -f sql/clear_database.sql 
 
+test: cleardb test-documentservice test-processservice
+
+test-documentservice:
+	$(GOTEST) $(PKGPATH)/cmd/documentservice
+
+test-processservice:
+	$(GOTEST) $(PKGPATH)/cmd/processservice
 
 clean: 
 	rm -rf $(BUILD_DIR)
@@ -76,3 +79,5 @@ setup:
 	go get -u github.com/go-pg/pg
 	go get -u github.com/gorilla/mux
 	go get -u github.com/satori/go.uuid
+	go get -u github.com/google/go-cmp/cmp
+	go get -u gotest.tools/assert

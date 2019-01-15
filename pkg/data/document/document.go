@@ -14,3 +14,19 @@ type Document struct {
 	Version     int32           `json:"version"`
 	Content     json.RawMessage `json:"content"`
 }
+
+func (doc *Document) GetContent(C interface{}) error {
+	return json.Unmarshal(doc.Content, C)
+}
+
+func (doc *Document) SetContent(C interface{}) error {
+	data, err := json.Marshal(C)
+	if err != nil {
+		return err
+	}
+	err = doc.Content.UnmarshalJSON(data)
+	if err != nil {
+		return err
+	}
+	return nil
+}
