@@ -24,11 +24,11 @@ func TestCRUD(t *testing.T) {
 		t.Error(err)
 	}
 	var createdDoc doc.Document
-	statusCode, err := client.Post(documentServiceURL+"/"+refDoc.Type, &refDoc, &createdDoc)
+	res, err := client.Post(documentServiceURL+"/"+refDoc.Type, &refDoc, &createdDoc)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, statusCode, http.StatusCreated, "HTTP status should be CREATED")
+	assert.Equal(t, res.StatusCode, http.StatusCreated, "HTTP status should be CREATED")
 	assert.Assert(t, createdDoc.ID != "", "In created document, ID should not be empty")
 	assert.Assert(t, createdDoc.TimeCreated != nil, "In created document, TimeCreated should not be nil")
 	assert.Assert(t, createdDoc.TimeUpdated != nil, "In created document, TimeUpdated should not be nil")
@@ -39,11 +39,11 @@ func TestCRUD(t *testing.T) {
 	refDoc.Version = createdDoc.Version
 	docURL := documentServiceURL + "/" + refDoc.Type + "/" + refDoc.ID
 	var storedDoc doc.Document
-	statusCode, err = client.Get(docURL, &storedDoc)
+	res, err = client.Get(docURL, &storedDoc)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, statusCode, http.StatusOK, "HTTP status should be OK")
+	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
 	assertDocsEqual(t, &refDoc, &storedDoc)
 	var order od.Order
 	err = refDoc.GetContent(&order)
@@ -69,29 +69,29 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	statusCode, err = client.Put(docURL, refDoc, nil)
+	res, err = client.Put(docURL, refDoc, nil)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, statusCode, http.StatusOK, "HTTP status should be OK")
-	statusCode, err = client.Get(docURL, &storedDoc)
+	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
+	res, err = client.Get(docURL, &storedDoc)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, statusCode, http.StatusOK, "HTTP status should be OK")
+	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
 	assert.Assert(t, storedDoc.TimeUpdated.After(*refDoc.TimeUpdated), "TimeUpdated not updated")
 	refDoc.TimeUpdated = storedDoc.TimeUpdated
 	assertDocsEqual(t, &refDoc, &storedDoc)
-	statusCode, err = client.Delete(docURL)
+	res, err = client.Delete(docURL)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, statusCode, http.StatusOK, "HTTP status should be OK")
-	statusCode, err = client.Get(docURL, &storedDoc)
+	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
+	res, err = client.Get(docURL, &storedDoc)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, statusCode, http.StatusNotFound, "HTTP status should be NOT FOUND")
+	assert.Equal(t, res.StatusCode, http.StatusNotFound, "HTTP status should be NOT FOUND")
 }
 
 func assertDocsEqual(T *testing.T, Doc1 *doc.Document, Doc2 *doc.Document) {

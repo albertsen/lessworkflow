@@ -20,9 +20,23 @@ import (
 )
 
 type result struct {
-	Document   *doc.Document
-	Error      error
-	StatusCode int
+	Document *doc.Document
+	Err      error
+	Response *client.Response
+}
+
+func (r *result) IsError() bool {
+	return r.Err != nil || r.Response.StatusCode != http.StatusOK
+}
+
+func (r *result) Error() string {
+	if r.Err != nil {
+		return r.Err.Error()
+	}
+	if r.Response.Message != "" {
+		return r.Response.Message
+	}
+	return string(r.Response.Body)
 }
 
 func main() {
@@ -40,11 +54,11 @@ func main() {
 
 func getDocument(URL string, C chan result) {
 	var doc doc.Document
-	statusCode, err := client.Get(URL, &doc)
+	res, err := client.Get(URL, &doc)
 	if err != nil {
-		C <- result{Error: err, StatusCode: statusCode}
+		C <- result{Err: err, Response: res}
 	} else {
-		C <- result{Document: &doc, StatusCode: statusCode}
+		C <- result{Document: &doc, Response: res}
 	}
 }
 
@@ -74,29 +88,25 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 	// Make two parallel calls to the document service
 	go getDocument(process.ProcessDefURL, processDefChan)
 	go getDocument(process.DocumentURL, docChan)
-	erroneousResults := make([]result, 0)
+	errorMessages := make([]string, 0)
 	for i := 0; i < 2; i++ {
 		select {
 		case processDefRes := <-processDefChan:
-			if processDefRes.Error != nil {
-				erroneousResults = append(erroneousResults, processDefRes)
-			} else {
+			if !processDefRes.IsError() {
 				action.ProcessDef = processDefRes.Document
 				action.Name = "startProcess"
+			} else {
+				errorMessages = append(errorMessages, processDefRes.Error())
 			}
 		case docRes := <-docChan:
-			if docRes.Error != nil {
-				erroneousResults = append(erroneousResults, docRes)
-			} else {
+			if !docRes.IsError() {
 				action.Document = docRes.Document
+			} else {
+				errorMessages = append(errorMessages, docRes.Error())
 			}
 		}
 	}
-	if l := len(erroneousResults); l > 0 {
-		errorMessages := make([]string, l)
-		for i := 0; i < l; i++ {
-			errorMessages[i] = erroneousResults[i].Error.Error()
-		}
+	if l := len(errorMessages); l > 0 {
 		server.SendError(w, http.StatusInternalServerError, strings.Join(errorMessages[:], ", "))
 		return
 	}

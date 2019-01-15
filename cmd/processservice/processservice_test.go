@@ -22,11 +22,13 @@ func TestCreateProcess(t *testing.T) {
 		ProcessDefURL: processDefURL,
 	}
 	var createdProc process.Process
-	statusCode, err := client.Post(processServiceURL, &refProc, &createdProc)
+	res, err := client.Post(processServiceURL, &refProc, &createdProc)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	assert.Equal(t, statusCode, http.StatusCreated, "HTTP status should be CREATED")
+	if res.StatusCode != http.StatusCreated {
+		t.Fatalf(string(res.Body))
+	}
 	assert.Assert(t, createdProc.ID != "", "In created process, ID should not be empty")
 	assert.Assert(t, createdProc.TimeCreated != nil, "In created process, TimeCreated should not be nil")
 	assert.Assert(t, createdProc.TimeUpdated != nil, "In created process, TimeUpdated should not be nil")

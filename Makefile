@@ -28,7 +28,7 @@ processservice:
 	$(GOBUILD) -o $(BUILD_DIR)/processservice -v $(PKGPATH)/cmd/processservice
 
 
-import-sample-data:
+load-sample-data:
 	curl --header "Content-Type: application/json" -v -d @./data/sample/order.json http://localhost:8000/documents/orders
 	curl --header "Content-Type: application/json" -v -d @./data/sample/process.json http://localhost:8000/documents/processdefs
 
@@ -48,7 +48,7 @@ test: cleardb test-documentservice test-processservice
 test-documentservice:
 	$(GOTEST) $(PKGPATH)/cmd/documentservice
 
-test-processservice:
+test-processservice: load-sample-data
 	$(GOTEST) $(PKGPATH)/cmd/processservice
 
 clean: 
