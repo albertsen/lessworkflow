@@ -16,6 +16,7 @@ type HandlerDef struct {
 }
 
 type ActionDef struct {
+	Alias       string            `json:"alias"`
 	Handler     string            `json:"handler"`
 	Transitions map[string]string `json:"tansitions"`
 }

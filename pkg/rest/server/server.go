@@ -26,3 +26,11 @@ func SendResponse(w http.ResponseWriter, statusCode int, data interface{}) {
 		json.NewEncoder(w).Encode(data)
 	}
 }
+
+func SendResponseOrError(w http.ResponseWriter, expectedStatusCode int, actualStatusCode int, data interface{}, err error) {
+	if actualStatusCode != expectedStatusCode {
+		SendError(w, actualStatusCode, err)
+	} else {
+		SendResponse(w, expectedStatusCode, data)
+	}
+}

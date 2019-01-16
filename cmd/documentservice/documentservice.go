@@ -9,9 +9,8 @@ import (
 	"time"
 
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
-	dbConn "github.com/albertsen/lessworkflow/pkg/db/conn"
+	"github.com/albertsen/lessworkflow/pkg/db/repo"
 	"github.com/albertsen/lessworkflow/pkg/rest/server"
-	"github.com/go-pg/pg"
 	"github.com/gorilla/mux"
 	uuid "github.com/satori/go.uuid"
 )
@@ -22,8 +21,8 @@ func main() {
 	router.HandleFunc("/documents/{type}/{id}", GetDocument).Methods("GET")
 	router.HandleFunc("/documents/{type}/{id}", UpdateDocument).Methods("PUT")
 	router.HandleFunc("/documents/{type}/{id}", DeleteDocument).Methods("DELETE")
-	dbConn.Connect()
-	defer dbConn.Close()
+	repo.Connect()
+	defer repo.Close()
 	addr := os.Getenv("LISTEN_ADDR")
 	if addr == "" {
 		addr = ":8000"
@@ -62,16 +61,8 @@ func CreateDocument(w http.ResponseWriter, r *http.Request) {
 	doc.TimeCreated = &now
 	doc.TimeUpdated = &now
 	doc.Version = 1
-	if err := dbConn.DB().Insert(&doc); err != nil {
-		pgError, ok := err.(pg.Error)
-		if ok && pgError.IntegrityViolation() {
-			server.SendError(w, http.StatusConflict, fmt.Sprintf("Document already exists with ID: %s", doc.ID))
-		} else {
-			server.SendError(w, http.StatusInternalServerError, err)
-		}
-		return
-	}
-	server.SendResponse(w, http.StatusCreated, doc)
+	statusCode, err := repo.Insert(&doc)
+	server.SendResponseOrError(w, http.StatusCreated, statusCode, doc, err)
 }
 
 func UpdateDocument(w http.ResponseWriter, r *http.Request) {
@@ -104,49 +95,28 @@ func UpdateDocument(w http.ResponseWriter, r *http.Request) {
 	}
 	now := time.Now().Truncate(time.Microsecond)
 	doc.TimeUpdated = &now
-	if err := dbConn.DB().Update(&doc); err != nil {
-		if err == pg.ErrNoRows {
-			server.SendError(w, http.StatusNotFound, fmt.Sprintf("No document found of type [%s] with ID: %s", doc.Type, doc.ID))
-		} else {
-			server.SendError(w, http.StatusInternalServerError, err)
-		}
-		return
-	}
-	server.SendOK(w, doc)
+	statusCode, err := repo.Update(&doc)
+	server.SendResponseOrError(w, http.StatusOK, statusCode, doc, err)
 }
 
 func GetDocument(w http.ResponseWriter, r *http.Request) {
 	docID := mux.Vars(r)["id"]
 	docType := mux.Vars(r)["type"]
-	doc := &doc.Document{
+	doc := doc.Document{
 		ID:   docID,
 		Type: docType,
 	}
-	if err := dbConn.DB().Select(doc); err != nil {
-		if err == pg.ErrNoRows {
-			server.SendError(w, http.StatusNotFound, fmt.Sprintf("No document found of type [%s] with ID: %s", doc.Type, doc.ID))
-		} else {
-			server.SendError(w, http.StatusInternalServerError, err)
-		}
-		return
-	}
-	server.SendOK(w, doc)
+	statusCode, err := repo.Select(&doc)
+	server.SendResponseOrError(w, http.StatusOK, statusCode, doc, err)
 }
 
 func DeleteDocument(w http.ResponseWriter, r *http.Request) {
 	docID := mux.Vars(r)["id"]
 	docType := mux.Vars(r)["type"]
-	doc := &doc.Document{
+	doc := doc.Document{
 		ID:   docID,
 		Type: docType,
 	}
-	if err := dbConn.DB().Delete(doc); err != nil {
-		if err == pg.ErrNoRows {
-			server.SendError(w, http.StatusNotFound, fmt.Sprintf("No document found with ID: %s", doc.ID))
-		} else {
-			server.SendError(w, http.StatusInternalServerError, err)
-		}
-		return
-	}
-	server.SendOK(w, nil)
+	statusCode, err := repo.Delete(&doc)
+	server.SendResponseOrError(w, http.StatusOK, statusCode, doc, err)
 }

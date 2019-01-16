@@ -4,51 +4,51 @@
 package order
 
 type Order struct {
-	Status          string
-	TotalPrice      *MonetaryAmount
-	TotalTax        *MonetaryAmount
-	Taxes           []*Tax
-	DeliveryAddress *Address
-	BillingAddress  *Address
-	PaymentDetails  []*PaymentDetails
-	LineItems       []*LineItem
-	Properties      map[string]interface{}
+	Status          string                 `json:"status"`
+	TotalPrice      *MonetaryAmount        `json:"totalPrice"`
+	TotalTax        *MonetaryAmount        `json:"totalTax,omitempty"`
+	Taxes           []*Tax                 `json:"taxes,omitempty"`
+	DeliveryAddress *Address               `json:"deliveryAddress,omitempty"`
+	BillingAddress  *Address               `json:"billingAddress,omitempty"`
+	PaymentDetails  []*PaymentDetails      `json:"paymentDetails,omitempty"`
+	LineItems       []*LineItem            `josn:"lineItems,omitempty"`
+	Properties      map[string]interface{} `json:"properties,omitempty"`
 }
 
 type Address struct {
-	Name         string
-	AddressLine1 string
-	AddressLine2 string
-	PostCode     string
-	City         string
-	CountryCode  string
-	Properties   map[string]interface{}
+	Name         string                 `json:"name"`
+	AddressLine1 string                 `json:"addressLine1"`
+	AddressLine2 string                 `json:"addressLine2,omitempty"`
+	PostCode     string                 `json:"postCode"`
+	City         string                 `json:"city"`
+	CountryCode  string                 `json:"countryCode"`
+	Properties   map[string]interface{} `json:"properties,omitempty"`
 }
 
 type PaymentDetails struct {
-	SubscriptionId  string
-	TransactionCode string
-	Amount          *MonetaryAmount
-	Properties      map[string]interface{}
+	SubscriptionId  string                 `json:"subscriptionId"`
+	TransactionCode string                 `json:"transactionCode"`
+	Amount          *MonetaryAmount        `json:"amount"`
+	Properties      map[string]interface{} `json:"properties,omitempty"`
 }
 
 type LineItem struct {
-	ProductId          string
-	ProductDescription string
-	Count              int32
-	ItemPrice          *MonetaryAmount
-	TotalPrice         *MonetaryAmount
-	ItemTaxes          []*Tax
-	TotalTaxes         []*Tax
-	Properties         map[string]interface{}
+	ProductId          string                 `json:"productId"`
+	ProductDescription string                 `json:"productDescription,omitempty"`
+	Count              int32                  `json:"count"`
+	ItemPrice          *MonetaryAmount        `json:"itemPrice"`
+	TotalPrice         *MonetaryAmount        `json:"totalPrice"`
+	ItemTaxes          []*Tax                 `json:"itemTaxes,omitempty"`
+	TotalTaxes         []*Tax                 `json:"totalTaxes,omitempty"`
+	Properties         map[string]interface{} `json:"properties,omitempty"`
 }
 
 type Tax struct {
-	Code   string
-	Amount *MonetaryAmount
+	Code   string          `json:"code"`
+	Amount *MonetaryAmount `json:"amount"`
 }
 
 type MonetaryAmount struct {
-	Value    int64
-	Currency string
+	Value    int64  `json:"value"`
+	Currency string `json:"currency"`
 }

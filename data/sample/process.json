@@ -22,8 +22,11 @@
                 }
             },
             "actions": {
-                "createOrder": {
-                    "handler": "createOrder",
+                "start": {
+                    "alias": "checkOrder"
+                },
+                "checkOrder": {
+                    "handler": "start",
                     "transitions": {
                         "CREATED": "capturePayment",
                         "ERROR": "error"

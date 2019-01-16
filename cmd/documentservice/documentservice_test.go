@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -43,7 +44,7 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
+	assert.Equal(t, res.StatusCode, http.StatusOK, fmt.Sprintf("HTTP status should be OK - %s", res))
 	assertDocsEqual(t, &refDoc, &storedDoc)
 	var order od.Order
 	err = refDoc.GetContent(&order)
@@ -73,12 +74,12 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
+	assert.Equal(t, res.StatusCode, http.StatusOK, fmt.Sprintf("HTTP status should be OK - %s", res))
 	res, err = client.Get(docURL, &storedDoc)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
+	assert.Equal(t, res.StatusCode, http.StatusOK, fmt.Sprintf("HTTP status should be OK - %s", res))
 	assert.Assert(t, storedDoc.TimeUpdated.After(*refDoc.TimeUpdated), "TimeUpdated not updated")
 	refDoc.TimeUpdated = storedDoc.TimeUpdated
 	assertDocsEqual(t, &refDoc, &storedDoc)
@@ -86,12 +87,12 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusOK, "HTTP status should be OK")
+	assert.Equal(t, res.StatusCode, http.StatusOK, fmt.Sprintf("HTTP status should be OK - %s", res))
 	res, err = client.Get(docURL, &storedDoc)
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusNotFound, "HTTP status should be NOT FOUND")
+	assert.Equal(t, res.StatusCode, http.StatusNotFound, fmt.Sprintf("HTTP status should be NOT FOUND - %s", res))
 }
 
 func assertDocsEqual(T *testing.T, Doc1 *doc.Document, Doc2 *doc.Document) {

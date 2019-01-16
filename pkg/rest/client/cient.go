@@ -22,6 +22,14 @@ type Response struct {
 	Body       []byte
 }
 
+func (R *Response) String() string {
+	msg := R.Message
+	if msg == "" {
+		msg = string(R.Body)
+	}
+	return fmt.Sprintf("HTTP response - Status code: %d. Message: '%s'", R.StatusCode, msg)
+}
+
 func Get(URL string, ResponseBody interface{}) (*Response, error) {
 	return PerformRequest("GET", URL, nil, ResponseBody)
 }

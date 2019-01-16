@@ -66,18 +66,19 @@ docker: build-linux
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/documentservice:latest -f infra/docker/documentservice/Dockerfile .
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processservice:latest -f infra/docker/processservice/Dockerfile .
 
-docker-compose-up: docker
+docker-start: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) up --remove-orphans
 
-docker-compose-down:
+docker-stop:
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) down
 
-docker-compose-restart-services: docker
+restart-services: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice processservice
 
 setup:
-	go get -u github.com/go-pg/pg
-	go get -u github.com/gorilla/mux
-	go get -u github.com/satori/go.uuid
-	go get -u github.com/google/go-cmp/cmp
-	go get -u gotest.tools/assert
+	go get -u github.com/go-pg/pg \
+		github.com/gorilla/mux \
+		github.com/satori/go.uuid \
+		github.com/google/go-cmp/cmp \
+		gotest.tools/assert \
+		github.com/streadway/amqp
