@@ -2,104 +2,68 @@ package msg
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 
+	"github.com/assembla/cony"
 	"github.com/streadway/amqp"
 )
 
 var (
-	conn *amqp.Connection
+	client *cony.Client
 )
 
-type Queue struct {
-	Name    string
-	Channel *amqp.Channel
+type Publisher struct {
+	Pub *cony.Publisher
 }
 
-type Message struct {
-	Err     error
-	Content interface{}
+func (P *Publisher) Publish(Message interface{}) error {
+	data, err := json.Marshal(Message)
+	if err != nil {
+		return err
+	}
+	return P.Pub.Publish(amqp.Publishing{
+		Body: data,
+	})
 }
 
-func Connect() error {
+func init() {
 	addr := os.Getenv("QUEUE_ADDR")
 	if addr == "" {
 		addr = "amqp://guest:guest@localhost:5672/"
 	}
-	var err error
-	conn, err = amqp.Dial(addr)
-	return err
-}
-
-func Close() error {
-	conn = nil
-	return conn.Close()
-}
-
-func (Q *Queue) Publish(Message interface{}) error {
-	data, err := json.Marshal(Q)
-	if err != nil {
-		return err
-	}
-	return Q.Channel.Publish(
-		"",     // exchange
-		Q.Name, // routing key
-		false,  // mandatory
-		false,  // immediate
-		amqp.Publishing{
-			ContentType: "application/json",
-			Body:        data,
-		})
-}
-
-func (Q *Queue) Consume(NewContent func() interface{}, quit chan bool) (chan Message, error) {
-	msgs, err := Q.Channel.Consume(
-		Q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
+	client = cony.NewClient(
+		cony.URL(addr),
+		cony.Backoff(cony.DefaultBackoff),
 	)
-	if err != nil {
-		return nil, err
+}
+
+func NewPublisher(Name string) *Publisher {
+	exc := cony.Exchange{
+		Name:       Name,
+		Kind:       "fanout",
+		AutoDelete: false,
+		Durable:    true,
 	}
-	msgChan := make(chan Message)
+	client.Declare([]cony.Declaration{
+		cony.DeclareExchange(exc),
+	})
+	publisher := cony.NewPublisher(exc.Name, "")
+	client.Publish(publisher)
+	return &Publisher{Pub: publisher}
+}
+
+func StartLoop() {
 	go func() {
-		for {
+		for client.Loop() {
 			select {
-			case d := <-msgs:
-				content := NewContent()
-				err := json.Unmarshal(d.Body, &content)
-				if err != nil {
-					msgChan <- Message{Err: err}
-				} else {
-					msgChan <- Message{Content: &content}
-				}
-			case <-quit:
-				return
+			case err := <-client.Errors():
+				log.Printf("Reconnecting to RabbitMQ after error: %s", err)
 			}
 		}
 	}()
-	return msgChan, nil
 }
 
-func OpenQueue(Name string) (*Queue, error) {
-	channel, err := conn.Channel()
-	if err != nil {
-		return nil, err
-	}
-	_, err = channel.QueueDeclare(
-		Name,  // name
-		true,  // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // argument
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &Queue{Name: Name, Channel: channel}, nil
+func Close() {
+	client.Close()
 }

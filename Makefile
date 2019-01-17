@@ -81,4 +81,5 @@ setup:
 		github.com/satori/go.uuid \
 		github.com/google/go-cmp/cmp \
 		gotest.tools/assert \
-		github.com/streadway/amqp
+		github.com/streadway/amqp \
+		github.com/assembla/cony

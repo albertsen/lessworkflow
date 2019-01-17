@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -22,7 +21,7 @@ import (
 )
 
 var (
-	queue *msg.Queue
+	publisher *msg.Publisher
 )
 
 type result struct {
@@ -46,19 +45,14 @@ func (r *result) Error() string {
 }
 
 func main() {
-	router := mux.NewRouter()
 	repo.Connect()
 	defer repo.Close()
-	err := msg.Connect()
-	if err != nil {
-		fmt.Printf("Error connecting to messaging server: %s", err)
-		os.Exit(1)
-	}
-	queue, err = msg.OpenQueue("actions")
-	if err != nil {
-		fmt.Printf("Error opening queue: %s", err)
-		os.Exit(1)
-	}
+
+	publisher = msg.NewPublisher("actions")
+	msg.StartLoop()
+	defer msg.Close()
+
+	router := mux.NewRouter()
 	router.HandleFunc("/processes", StartProcess).Methods("POST")
 	addr := os.Getenv("LISTEN_ADDR")
 	if addr == "" {
@@ -126,7 +120,7 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 		server.SendError(w, http.StatusInternalServerError, strings.Join(errorMessages[:], ", "))
 		return
 	}
-	err := queue.Publish(action)
+	err := publisher.Publish(action)
 	if err != nil {
 		server.SendError(w, http.StatusInternalServerError, err)
 		return
