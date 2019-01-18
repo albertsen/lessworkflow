@@ -62,13 +62,13 @@ func main() {
 	log.Fatal(http.ListenAndServe(addr, router))
 }
 
-func getDocument(URL string, C chan result) {
+func getDocument(url string, c chan result) {
 	var doc doc.Document
-	res, err := client.Get(URL, &doc)
+	res, err := client.Get(url, &doc)
 	if err != nil {
-		C <- result{Err: err, Response: res}
+		c <- result{Err: err, Response: res}
 	} else {
-		C <- result{Document: &doc, Response: res}
+		c <- result{Document: &doc, Response: res}
 	}
 }
 

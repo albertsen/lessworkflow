@@ -12,8 +12,8 @@ var (
 	Close   = conn.Close
 )
 
-func Select(Record interface{}) (int, error) {
-	if err := conn.DB().Select(Record); err != nil {
+func Select(record interface{}) (int, error) {
+	if err := conn.DB().Select(record); err != nil {
 		if err == pg.ErrNoRows {
 			return http.StatusNotFound, nil
 		}
@@ -22,8 +22,8 @@ func Select(Record interface{}) (int, error) {
 	return http.StatusOK, nil
 }
 
-func Insert(Record interface{}) (int, error) {
-	if err := conn.DB().Insert(Record); err != nil {
+func Insert(record interface{}) (int, error) {
+	if err := conn.DB().Insert(record); err != nil {
 		pgError, ok := err.(pg.Error)
 		if ok && pgError.IntegrityViolation() {
 			return http.StatusConflict, err
@@ -33,8 +33,8 @@ func Insert(Record interface{}) (int, error) {
 	return http.StatusCreated, nil
 }
 
-func Update(Record interface{}) (int, error) {
-	if err := conn.DB().Update(Record); err != nil {
+func Update(record interface{}) (int, error) {
+	if err := conn.DB().Update(record); err != nil {
 		if err == pg.ErrNoRows {
 			return http.StatusNotFound, err
 		}
@@ -43,8 +43,8 @@ func Update(Record interface{}) (int, error) {
 	return http.StatusOK, nil
 }
 
-func Delete(Record interface{}) (int, error) {
-	if err := conn.DB().Delete(Record); err != nil {
+func Delete(record interface{}) (int, error) {
+	if err := conn.DB().Delete(record); err != nil {
 		if err == pg.ErrNoRows {
 			return http.StatusNotFound, err
 		}

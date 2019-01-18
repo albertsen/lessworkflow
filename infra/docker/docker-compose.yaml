@@ -4,7 +4,7 @@ services:
     image: gcr.io/sap-se-commerce-arch/documentservice:latest
     restart: always
     environment:
-      - DB_ADDR=postgres:5432
+      - DB_SERVER_ADDR=postgres:5432
       - LISTEN_ADDR=:80
     ports:
       - "8000:80"
@@ -14,9 +14,9 @@ services:
     image: gcr.io/sap-se-commerce-arch/processservice:latest
     restart: always
     environment:
-      - DB_ADDR=postgres:5432
+      - DB_SERVER_ADDR=postgres:5432
       - DOCUMENTSERVICE_URL=http://documentservice
-      - QUEUE_ADDR=amqp://guest:guest@rabbitmq:5672/
+      - MSG_SERVER_URL=amqp://guest:guest@rabbitmq:5672/
       - LISTEN_ADDR=:80
     ports:
       - "8001:80"

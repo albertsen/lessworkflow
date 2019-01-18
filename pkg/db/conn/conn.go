@@ -11,7 +11,7 @@ var (
 )
 
 func Connect() {
-	addr := os.Getenv("DB_ADDR")
+	addr := os.Getenv("DB_SERVER_ADDR")
 	if addr == "" {
 		addr = "localhost:5432"
 	}

@@ -15,12 +15,12 @@ type Document struct {
 	Content     json.RawMessage `json:"content"`
 }
 
-func (doc *Document) GetContent(C interface{}) error {
-	return json.Unmarshal(doc.Content, C)
+func (doc *Document) GetContent(content interface{}) error {
+	return json.Unmarshal(doc.Content, content)
 }
 
-func (doc *Document) SetContent(C interface{}) error {
-	data, err := json.Marshal(C)
+func (doc *Document) SetContent(content interface{}) error {
+	data, err := json.Marshal(content)
 	if err != nil {
 		return err
 	}
