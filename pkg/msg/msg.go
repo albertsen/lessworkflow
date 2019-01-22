@@ -81,7 +81,7 @@ func declareQueue(name string) *cony.Queue {
 	}
 	exc := cony.Exchange{
 		Name:       name,
-		Kind:       "fanout",
+		Kind:       "direct",
 		AutoDelete: false,
 		Durable:    true,
 	}
@@ -108,6 +108,7 @@ func NewPublisher(name string) *Publisher {
 func NewConsumer(name string) *Consumer {
 	que := declareQueue(name)
 	cns := cony.NewConsumer(que)
+	client.Consume(cns)
 	return &Consumer{Cns: cns}
 }
 
