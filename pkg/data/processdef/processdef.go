@@ -17,5 +17,6 @@ type HandlerDef struct {
 
 type ActionDef struct {
 	Handler     string            `json:"handler"`
+	WaitFor     string            `json:"waitFor"`
 	Transitions map[string]string `json:"tansitions"`
 }

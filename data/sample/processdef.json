@@ -11,8 +11,8 @@
                 "capturePayment": {
                     "url": "http://actionhandler.lw.svc.cluster.local/handlers/capturePayment"
                 },
-                "splitOrder": {
-                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/splitOrder"
+                "shipOrder": {
+                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/shipOrder"
                 },
                 "error": {
                     "url": "http://actionhandler.lw.svc.cluster.local/handlers/error"
@@ -39,10 +39,17 @@
                         "ERROR": "error"
                     }
                 },
-                "splitOrder": {
-                    "handler": "splitOrder",
+                "shipOrder": {
+                    "handler": "shipOrder",
                     "transitions": {
-                        "ORDER_SPLIT": "done",
+                        "ORDER_SPLIT": "waitForShipment",
+                        "ERROR": "error"
+                    }
+                },
+                "waitForShipment": {
+                    "waitFor": "shipped",
+                    "transitions": {
+                        "SHIPPED": "done",
                         "ERROR": "error"
                     }
                 },

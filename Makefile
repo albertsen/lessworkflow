@@ -32,7 +32,7 @@ processengine:
 
 load-sample-data:
 	curl --header "Content-Type: application/json" -v -d @./data/sample/order.json http://localhost:8000/documents/orders
-	curl --header "Content-Type: application/json" -v -d @./data/sample/process.json http://localhost:8000/documents/processdefs
+	curl --header "Content-Type: application/json" -v -d @./data/sample/processdef.json http://localhost:8000/documents/processdefs
 
 createdb:
 	$(PSQL) -U postgres postgres -f sql/create_database.sql 
