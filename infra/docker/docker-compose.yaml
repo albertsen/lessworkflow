@@ -23,6 +23,13 @@ services:
     depends_on: 
       - documentservice
       - rabbitmq
+  processengine:
+    image: gcr.io/sap-se-commerce-arch/processengine:latest
+    restart: always
+    environment:
+      - MSG_SERVER_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on: 
+      - rabbitmq
   rabbitmq:
     image: rabbitmq
     restart: always

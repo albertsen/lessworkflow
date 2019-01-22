@@ -1,18 +1,37 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"os"
+	"log"
 
+	"github.com/albertsen/lessworkflow/pkg/data/action"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 )
 
-func main() {
-	err := msg.Connect()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func newContentStruct() interface{} {
+	return &action.Action{}
+}
+
+func processContent(content interface{}) error {
+	action, ok := content.(*action.Action)
+	if !ok {
+		return errors.New(fmt.Sprintf("Unexepected content: %s", content))
 	}
+	log.Printf("Processing action: %s", action)
+	return nil
+}
+
+func main() {
+	defer msg.Close()
+	consumer := msg.NewConsumer("actions")
+	done := make(chan bool)
+	consumer.Consume(
+		newContentStruct,
+		processContent,
+		done,
+	)
+	<-done
 }
 
 // func performAction(Connection *msg.Connection, ProcessDef *processdef.ProcessDef, ActionRequest *pbAction.Request) error {

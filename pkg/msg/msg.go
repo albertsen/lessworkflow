@@ -22,6 +22,7 @@ func (p *Publisher) Publish(content interface{}) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("Publishing message: %s", string(data))
 	return p.Pub.Publish(amqp.Publishing{
 		Body:            data,
 		ContentType:     "application/json",
@@ -33,11 +34,13 @@ type Consumer struct {
 	Cns *cony.Consumer
 }
 
-func (c *Consumer) Consume(newContent func() interface{}, processContent func(interface{}) error) {
+func (c *Consumer) Consume(newContentStruct func() interface{}, processContent func(interface{}) error, done chan bool) {
 	for client.Loop() {
+		log.Println("Starting consumer loop")
 		select {
 		case msg := <-c.Cns.Deliveries():
-			content := newContent()
+			log.Printf("Received message: %s", string(msg.Body))
+			content := newContentStruct()
 			err := json.Unmarshal(msg.Body, content)
 			if err != nil {
 				log.Printf("Error unmarshaling message content: %s", err)
@@ -48,10 +51,13 @@ func (c *Consumer) Consume(newContent func() interface{}, processContent func(in
 				log.Printf("Error prcessing content of message: %s", err)
 				// TODO: Put in error queue
 			}
+			msg.Ack(false)
 		case err := <-c.Cns.Errors():
 			log.Printf("Consumer error: %v\n", err)
 		case err := <-client.Errors():
 			log.Printf("Client error: %v\n", err)
+		case <-done:
+			return
 		}
 	}
 }
@@ -67,30 +73,16 @@ func init() {
 	)
 }
 
-func NewPublisher(name string) *Publisher {
-	exc := cony.Exchange{
-		Name:       name,
-		Kind:       "direct",
-		Durable:    true,
-		AutoDelete: false,
-	}
-	client.Declare([]cony.Declaration{
-		cony.DeclareExchange(exc),
-	})
-	publisher := cony.NewPublisher(exc.Name, "")
-	client.Publish(publisher)
-	return &Publisher{Pub: publisher}
-}
-
-func NewConsumer(name string) *Consumer {
+func declareQueue(name string) *cony.Queue {
 	que := &cony.Queue{
+		Name:       name,
 		AutoDelete: false,
 		Durable:    true,
 	}
 	exc := cony.Exchange{
 		Name:       name,
-		Kind:       "direct",
-		AutoDelete: true,
+		Kind:       "fanout",
+		AutoDelete: false,
 		Durable:    true,
 	}
 	bnd := cony.Binding{
@@ -103,13 +95,24 @@ func NewConsumer(name string) *Consumer {
 		cony.DeclareExchange(exc),
 		cony.DeclareBinding(bnd),
 	})
-	cns := cony.NewConsumer(
-		que,
-	)
+	return que
+}
+
+func NewPublisher(name string) *Publisher {
+	declareQueue(name)
+	publisher := cony.NewPublisher(name, "")
+	client.Publish(publisher)
+	return &Publisher{Pub: publisher}
+}
+
+func NewConsumer(name string) *Consumer {
+	que := declareQueue(name)
+	cns := cony.NewConsumer(que)
 	return &Consumer{Cns: cns}
 }
 
-func StartLoop() {
+func StartConnectionLoop() {
+	log.Printf("Starting connection loop")
 	go func() {
 		for client.Loop() {
 			select {

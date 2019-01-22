@@ -20,12 +20,14 @@ PSQL=psql -h localhost -p $(PSQL_PORT)
 DB_NAME=lessworkflow
 
 
-build: documentservice processservice
+build: documentservice processservice processengine
 
 documentservice:
 	$(GOBUILD) -o $(BUILD_DIR)/documentservice -v $(PKGPATH)/cmd/documentservice
 processservice:
 	$(GOBUILD) -o $(BUILD_DIR)/processservice -v $(PKGPATH)/cmd/processservice
+processengine:
+	$(GOBUILD) -o $(BUILD_DIR)/processengine -v $(PKGPATH)/cmd/processengine
 
 
 load-sample-data:
@@ -65,6 +67,7 @@ build-linux: build
 docker: build-linux
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/documentservice:latest -f infra/docker/documentservice/Dockerfile .
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processservice:latest -f infra/docker/processservice/Dockerfile .
+	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processengine:latest -f infra/docker/processengine/Dockerfile .
 
 docker-start: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) up --remove-orphans
@@ -73,7 +76,8 @@ docker-stop:
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) down
 
 restart-services: docker
-	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && $(DOCKER_COMPOSE) up --no-deps -d documentservice processservice
+	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice processservice processengine && \
+		$(DOCKER_COMPOSE) up --no-deps -d documentservice processservice processengine
 
 setup:
 	go get -u github.com/go-pg/pg \

@@ -49,7 +49,7 @@ func main() {
 	defer repo.Close()
 
 	publisher = msg.NewPublisher("actions")
-	msg.StartLoop()
+	msg.StartConnectionLoop()
 	defer msg.Close()
 
 	router := mux.NewRouter()
