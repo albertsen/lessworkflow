@@ -31,7 +31,7 @@ services:
     depends_on: 
       - rabbitmq
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:latest
     restart: always
     volumes:
       - /private/var/lib/rabbitmq:/var/lib/rabbitmq

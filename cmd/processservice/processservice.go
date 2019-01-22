@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/albertsen/lessworkflow/pkg/data/action"
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
 	"github.com/albertsen/lessworkflow/pkg/data/process"
+	wf "github.com/albertsen/lessworkflow/pkg/data/workflow"
 	"github.com/albertsen/lessworkflow/pkg/db/repo"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 	uuid "github.com/satori/go.uuid"
@@ -48,8 +48,8 @@ func main() {
 	repo.Connect()
 	defer repo.Close()
 
-	publisher = msg.NewPublisher("actions")
-	msg.StartConnectionLoop()
+	publisher = msg.NewPublisher("steps")
+	msg.Connect()
 	defer msg.Close()
 
 	router := mux.NewRouter()
@@ -90,7 +90,7 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 		processID = uuid.String()
 	}
 	process.ID = processID
-	action := action.Action{
+	wfStep := wf.Step{
 		ProcessID: processID,
 	}
 	processDefChan := make(chan result)
@@ -103,14 +103,14 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 		select {
 		case processDefRes := <-processDefChan:
 			if !processDefRes.IsError() {
-				action.ProcessDef = processDefRes.Document
-				action.Name = "start"
+				wfStep.ProcessDef = processDefRes.Document
+				wfStep.Name = "start"
 			} else {
 				errorMessages = append(errorMessages, processDefRes.Error())
 			}
 		case docRes := <-docChan:
 			if !docRes.IsError() {
-				action.Document = docRes.Document
+				wfStep.Document = docRes.Document
 			} else {
 				errorMessages = append(errorMessages, docRes.Error())
 			}
@@ -120,7 +120,7 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 		server.SendError(w, http.StatusInternalServerError, strings.Join(errorMessages[:], ", "))
 		return
 	}
-	err := publisher.Publish(action)
+	err := publisher.Publish(wfStep)
 	if err != nil {
 		server.SendError(w, http.StatusInternalServerError, err)
 		return

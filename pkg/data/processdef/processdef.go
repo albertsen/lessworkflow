@@ -6,17 +6,17 @@ type ProcessDef struct {
 }
 
 type ProcessWorkflow struct {
-	Handlers map[string]*HandlerDef `json:"handlers"`
-	Actions  map[string]*ActionDef  `json:"actions"`
-	Start    string                 `json:"start,omitempty"`
-}
-
-type HandlerDef struct {
-	URL string `json:"url"`
+	Actions map[string]*ActionDef `json:"actions"`
+	Steps   map[string]*StepDef   `json:"steps"`
+	Start   string                `json:"start,omitempty"`
 }
 
 type ActionDef struct {
-	Handler     string            `json:"handler"`
+	URL string `json:"url"`
+}
+
+type StepDef struct {
+	Action      string            `json:"action"`
 	WaitFor     string            `json:"waitFor"`
 	Transitions map[string]string `json:"tansitions"`
 }

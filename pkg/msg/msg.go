@@ -112,7 +112,7 @@ func NewConsumer(name string) *Consumer {
 	return &Consumer{Cns: cns}
 }
 
-func StartConnectionLoop() {
+func Connect() {
 	log.Printf("Starting connection loop")
 	go func() {
 		for client.Loop() {
