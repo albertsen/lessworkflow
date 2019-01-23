@@ -1,5 +1,10 @@
 package processdef
 
+const (
+	StepTypeAction = "action"
+	StepTypeWait   = "wait"
+)
+
 type ProcessDef struct {
 	Description string           `json:"description,omitempty"`
 	Workflow    *ProcessWorkflow `json:"workflow"`
@@ -16,7 +21,14 @@ type ActionDef struct {
 }
 
 type StepDef struct {
-	Action      string            `json:"action"`
-	WaitFor     string            `json:"waitFor"`
-	Transitions map[string]string `json:"tansitions"`
+	Action      string            `json:"action,omitempty"`
+	Transitions map[string]string `json:"tansitions,omitempty"`
+	WaitFor     string            `json:"waitFor,omitempty"`
+	Next        string            `json:"next,omitempty"`
+}
+
+func (s *StepDef) Type() string, error {
+	if s.Action == "" && s.WaitFor == "" {
+		return "", fmt.Errorf("Invalid step definition. Neither 'action' nor '")
+	}
 }

@@ -5,20 +5,23 @@
         "description": "Example order fulfilment process",
         "workflow": {
             "actions": {
-                "createOrder": {
-                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/createOrder"
+                "checkOrder": {
+                    "url": "http://actionhandler/handle?orderStatus=CHECKED&return=OK"
                 },
                 "capturePayment": {
-                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/capturePayment"
+                    "url": "http://actionhandler/handle?orderStatus=PAYMENT_CAPTURED&return=OK"
                 },
-                "shipOrder": {
-                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/shipOrder"
+                "prepareShipment": {
+                    "url": "http://actionhandler/handle?orderStatus=PREPARING_SHIPMENT&return=OK"
+                },
+                "shipped": {
+                    "url": "http://actionhandler/handle?orderStatus=SHIPPED&return=OK"
                 },
                 "error": {
-                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/error"
+                    "url": "http://actionhandler/handle?orderStatus=ERROR"
                 },
                 "done": {
-                    "url": "http://actionhandler.lw.svc.cluster.local/handlers/done"
+                    "url": "http://actionhandler/handle?orderStatus=COMPLETED&return=OK"
                 }
             },
             "steps": {
@@ -32,7 +35,7 @@
                 "capturePayment": {
                     "action": "capturePayment",
                     "transitions": {
-                        "PAYMENT_CAPTURED": "splitOrder",
+                        "OK": "splitOrder",
                         "ERROR": "error"
                     }
                 },
@@ -45,8 +48,12 @@
                 },
                 "waitForShipment": {
                     "waitFor": "shipped",
+                    "next": "shipped"
+                },
+                "shipped": {
+                    "action": "shipped",
                     "transitions": {
-                        "SHIPPED": "done",
+                        "OK": "done",
                         "ERROR": "error"
                     }
                 },
