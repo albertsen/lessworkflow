@@ -1,4 +1,4 @@
-package workflow
+package processexec
 
 import (
 	"encoding/json"
@@ -23,10 +23,10 @@ func (s *Step) StepDef() (*pd.StepDef, error) {
 		return nil, fmt.Errorf("Step without a name cannot be executed")
 	}
 	if s.ProcessDef == nil {
-		return nil, fmt.Errorf("No process definition attached to step: %s", step.Name)
+		return nil, fmt.Errorf("No process definition attached to step: %s", s.Name)
 	}
 	if s.ProcessDef.Content == nil {
-		return nil, fmt.Errorf("Process defintion doesn't have content for step: %s", step.Name)
+		return nil, fmt.Errorf("Process defintion doesn't have content for step: %s", s.Name)
 	}
 	var processDef pd.ProcessDef
 	if err := json.Unmarshal(s.ProcessDef.Content, &processDef); err != nil {
@@ -39,7 +39,10 @@ func (s *Step) StepDef() (*pd.StepDef, error) {
 		return nil, fmt.Errorf("Workflow doesn't have any steps")
 	}
 	stepDef := processDef.Workflow.Steps[s.Name]
-
+	if stepDef == nil {
+		return nil, fmt.Errorf("No workflow step definition found for step: %", s.Name)
+	}
+	return stepDef, nil
 }
 
 type ActionRequest struct {

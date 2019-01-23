@@ -9,7 +9,8 @@ import (
 	"log"
 	"net/http"
 
-	wf "github.com/albertsen/lessworkflow/pkg/data/workflow"
+	pd "github.com/albertsen/lessworkflow/pkg/data/processdef"
+	pe "github.com/albertsen/lessworkflow/pkg/data/processexec"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 )
 
@@ -18,11 +19,11 @@ var (
 )
 
 func newContentStruct() interface{} {
-	return &wf.Step{}
+	return &pe.Step{}
 }
 
 func processContent(content interface{}) error {
-	step, ok := content.(*wf.Step)
+	step, ok := content.(*pe.Step)
 	if !ok {
 		return errors.New(fmt.Sprintf("Unexepected content: %s", content))
 	}
@@ -43,18 +44,24 @@ func main() {
 	<-done
 }
 
-func executeStep(step *wf.Step) error {
-	stepDef, err := processDef.Workflow.Steps[step.Name]
+func executeStep(step *pe.Step) error {
+	stepDef, err := step.StepDef()
 	if err != nil {
 		return err
 	}
-	if stepDef.Action == "" {
-		return fmt.Errorf("No action defined for step: %s", step.Name)
+	stepType, err := stepDef.Type()
+	if err != nil {
+		return err
 	}
-	if processDef.Workflow.Actions == nil {
-		return fmt.Errorf("Workflow doesn't have any actions")
+	if stepType == pd.StepTypeAction {
+		return executeActiomStep(step, stepDef)
+	} else {
+		return nil
 	}
-	actionDef := processDef.Workflow.Actions[stepDef.Action]
+}
+
+func executeActiomStep(step *pe.Step, stepDef *pd.StepDef) {
+	actionDef. err := stepDef.ActionDef(step.ProcessDef)
 	if actionDef == nil {
 		return fmt.Errorf("Cannot find action definition for: %s", stepDef.Action)
 	}
@@ -95,4 +102,5 @@ func executeStep(step *wf.Step) error {
 	}
 	publisher.Publish(nextStep)
 	return nil
+
 }
