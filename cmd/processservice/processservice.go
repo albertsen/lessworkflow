@@ -10,7 +10,7 @@ import (
 
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
 	"github.com/albertsen/lessworkflow/pkg/data/process"
-	wf "github.com/albertsen/lessworkflow/pkg/data/workflow"
+	pe "github.com/albertsen/lessworkflow/pkg/data/processexec"
 	"github.com/albertsen/lessworkflow/pkg/db/repo"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 	uuid "github.com/satori/go.uuid"
@@ -90,7 +90,7 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 		processID = uuid.String()
 	}
 	process.ID = processID
-	wfStep := wf.Step{
+	wfStep := pe.Step{
 		ProcessID: processID,
 	}
 	processDefChan := make(chan result)

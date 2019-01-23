@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -25,7 +24,7 @@ func newContentStruct() interface{} {
 func processContent(content interface{}) error {
 	step, ok := content.(*pe.Step)
 	if !ok {
-		return errors.New(fmt.Sprintf("Unexepected content: %s", content))
+		return fmt.Errorf("Unexepected content: %s", content)
 	}
 	return executeStep(step)
 }
@@ -54,20 +53,31 @@ func executeStep(step *pe.Step) error {
 		return err
 	}
 	if stepType == pd.StepTypeAction {
-		return executeActiomStep(step, stepDef)
+		return executeActionStep(step, stepDef)
 	} else {
+		log.Printf("Wait steps not implemented yet")
 		return nil
 	}
 }
 
-func executeActiomStep(step *pe.Step, stepDef *pd.StepDef) {
-	actionDef. err := stepDef.ActionDef(step.ProcessDef)
-	if actionDef == nil {
-		return fmt.Errorf("Cannot find action definition for: %s", stepDef.Action)
+func executeActionStep(step *pe.Step, stepDef *pd.StepDef) error {
+	var proecessDef pd.ProcessDef
+	if step.ProcessDef == nil {
+		return fmt.Errorf("Step doesn't have process definition document")
+	}
+	if step.ProcessDef.Content == nil {
+		return fmt.Errorf("Process definition document doesn't have content")
+	}
+	if err := json.Unmarshal(step.ProcessDef.Content, &proecessDef); err != nil {
+		return err
+	}
+	actionDef, err := stepDef.ActionDef(&proecessDef)
+	if err != nil {
+		return err
 	}
 	log.Printf("Performing action: process [%s] - process ID [%s] - step [%s] - action [%s] - action URL [%s]",
 		step.ProcessDef.ID, step.ProcessID, step.Name, stepDef.Action, actionDef.URL)
-	actionReq := wf.ActionRequest{Document: step.Document}
+	actionReq := pe.ActionRequest{Document: step.Document}
 	jsonDoc, err := json.Marshal(actionReq)
 	if err != nil {
 		return err
@@ -81,20 +91,20 @@ func executeActiomStep(step *pe.Step, stepDef *pd.StepDef) {
 	if err != nil {
 		return err
 	}
-	var actionResponse wf.ActionResponse
+	var actionResponse pe.ActionResponse
 	err = json.Unmarshal(body, &actionResponse)
 	if err != nil {
 		return err
 	}
 	if stepDef.Transitions == nil {
-		log.Printf("ERRPR - No further transitons for process [%s] - process ID [%s] - step [%s] - action [%s] - action URL [%s]",
+		log.Printf("ERROR - No further transitons for process [%s] - process ID [%s] - step [%s] - action [%s] - action URL [%s]",
 			step.ProcessDef.ID, step.ProcessID, step.Name, stepDef.Action, actionDef.URL)
 	}
 	nextStepName := stepDef.Transitions[actionResponse.Result]
 	if nextStepName == "" {
 		return fmt.Errorf("Cannot find transition for result [%s] in process [%s]", actionResponse.Result, step.ProcessDef.ID)
 	}
-	var nextStep = wf.Step{
+	var nextStep = pe.Step{
 		ProcessID:  step.ProcessID,
 		ProcessDef: step.ProcessDef,
 		Name:       nextStepName,
@@ -102,5 +112,4 @@ func executeActiomStep(step *pe.Step, stepDef *pd.StepDef) {
 	}
 	publisher.Publish(nextStep)
 	return nil
-
 }
