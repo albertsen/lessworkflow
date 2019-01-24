@@ -4,14 +4,56 @@ import (
 	"encoding/json"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/assembla/cony"
 	"github.com/streadway/amqp"
 )
 
 var (
-	client *cony.Client
+	addr       string
+	conn       *amqp.Connection
+	chann      *amqp.Channel
+	connMutex  = &sync.Mutex{}
+	channMutex = &sync.Mutex{}
 )
+
+func init() {
+	addr = os.Getenv("MSG_SERVER_URL")
+	if addr == "" {
+		addr = "amqp://guest:guest@localhost:5672/"
+	}
+}
+
+func connection() (*amqp.Connection, error) {
+	connMutex.Lock()
+	defer connMutex.Unlock()
+	if conn == nil {
+		var err error
+		conn, err = amqp.Dial(addr)
+		if err != nil {
+			conn = nil
+			return nil, err
+		}
+	}
+	return conn, nil
+}
+
+func channel() (*amqp.Channel, error) {
+	channMutex.Lock()
+	defer channMutex.Unlock()
+	if chann == nil {
+		con, err := connection()
+		if err != nil {
+			return nil, err
+		}
+		chann, err = con.Channel()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return chann, nil
+}
 
 type Publisher struct {
 	Pub *cony.Publisher
