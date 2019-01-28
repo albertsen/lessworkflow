@@ -1,4 +1,4 @@
-package engine
+package process
 
 import (
 	"encoding/json"
@@ -6,10 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/albertsen/lessworkflow/pkg/msg"
-
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
-	pd "github.com/albertsen/lessworkflow/pkg/data/processdef"
 	restClient "github.com/albertsen/lessworkflow/pkg/rest/client"
 )
 
@@ -18,17 +15,17 @@ const (
 	stepTypeWait   = "wait"
 )
 
-type ProcessEngine struct {
-	StepPublisher  *msg.Publisher
-	ErrorPublisher *msg.Publisher
-	StepConsumer   *msg.Consumer
+type Process struct {
+	tableName     struct{}   `sql:"processes"`
+	ID            string     `json:"id"`
+	Status        string     `json:"status"`
+	TimeCreated   *time.Time `json:"timeCreated"`
+	TimeUpdated   *time.Time `json:"timeUpdated"`
+	DocumentURL   string     `json:"documentURL"`
+	ProcessDefURL string     `json:"processDefURL"`
 }
 
-func StartProcess(processDef *pd.ProcessDef) error {
-	return nil
-}
-
-type StepExecutionRequest struct {
+type Step struct {
 	Name       string        `json:"name"`
 	ProcessID  string        `json:"processId"`
 	RetryCount int32         `json:"retryCount"`
@@ -37,7 +34,11 @@ type StepExecutionRequest struct {
 	Document   *doc.Document `json:"document"`
 }
 
-func (s *StepExecutionRequest) Execute() (*StepExecutionRequest, error) {
+func StartProcess(processDefDoc *doc.Document, payloadDoc *doc.Document) error {
+	return nil
+}
+
+func (s *Step) Execute() (*Step, error) {
 	stepDef, err := s.stepDef()
 	if err != nil {
 		return nil, err
@@ -46,7 +47,7 @@ func (s *StepExecutionRequest) Execute() (*StepExecutionRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	if stepType == pd.StepTypeAction {
+	if stepType == stepTypeAction {
 		return s.executeActionStep(stepDef)
 	} else {
 		log.Printf("Wait steps not implemented yet")
@@ -54,14 +55,14 @@ func (s *StepExecutionRequest) Execute() (*StepExecutionRequest, error) {
 	}
 }
 
-func (s *StepExecutionRequest) executeActionStep(stepDef *pd.StepDef) (*StepExecutionRequest, error) {
+func (s *Step) executeActionStep(stepDef *StepDef) (*Step, error) {
 	if s.ProcessDef == nil {
 		return nil, fmt.Errorf("Step doesn't have process definition document")
 	}
 	if s.ProcessDef.Content == nil {
 		return nil, fmt.Errorf("Process definition document doesn't have content")
 	}
-	var processDef pd.ProcessDef
+	var processDef ProcessDef
 	if err := json.Unmarshal(s.ProcessDef.Content, &processDef); err != nil {
 		return nil, err
 	}
@@ -85,7 +86,7 @@ func (s *StepExecutionRequest) executeActionStep(stepDef *pd.StepDef) (*StepExec
 	if nextStepName == "" {
 		return nil, fmt.Errorf("Cannot find transition for result [%s] in process [%s]", actionResponse.Result, s.ProcessDef.ID)
 	}
-	return &StepExecutionRequest{
+	return &Step{
 		ProcessID:  s.ProcessID,
 		ProcessDef: s.ProcessDef,
 		Name:       nextStepName,
@@ -93,7 +94,7 @@ func (s *StepExecutionRequest) executeActionStep(stepDef *pd.StepDef) (*StepExec
 	}, nil
 }
 
-func (s *StepExecutionRequest) stepDef() (*pd.StepDef, error) {
+func (s *Step) stepDef() (*StepDef, error) {
 	if s.Name == "" {
 		return nil, fmt.Errorf("Step without a name cannot be executed")
 	}
@@ -103,7 +104,7 @@ func (s *StepExecutionRequest) stepDef() (*pd.StepDef, error) {
 	if s.ProcessDef.Content == nil {
 		return nil, fmt.Errorf("Process defintion doesn't have content for step: %s", s.Name)
 	}
-	var processDef pd.ProcessDef
+	var processDef ProcessDef
 	if err := json.Unmarshal(s.ProcessDef.Content, &processDef); err != nil {
 		return nil, err
 	}
@@ -120,7 +121,7 @@ func (s *StepExecutionRequest) stepDef() (*pd.StepDef, error) {
 	return stepDef, nil
 }
 
-func stepDefType(stepDef *pd.StepDef) (string, error) {
+func stepDefType(stepDef *StepDef) (string, error) {
 	if stepDef == nil {
 		return "", fmt.Errorf("No step definotion given")
 	}
@@ -137,7 +138,7 @@ func stepDefType(stepDef *pd.StepDef) (string, error) {
 	}
 }
 
-func actionDef(stepDef *pd.StepDef, pd *pd.ProcessDef) (*pd.ActionDef, error) {
+func actionDef(stepDef *StepDef, pd *ProcessDef) (*ActionDef, error) {
 	if stepDef == nil {
 		return nil, fmt.Errorf("No step definotion given")
 	}

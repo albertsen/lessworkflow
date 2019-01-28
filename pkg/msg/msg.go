@@ -6,7 +6,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/assembla/cony"
 	"github.com/streadway/amqp"
 )
 
@@ -18,10 +17,107 @@ var (
 	channMutex = &sync.Mutex{}
 )
 
+func Publish(queueName string, content interface{}) error {
+	data, err := json.Marshal(content)
+	if err != nil {
+		return err
+	}
+	log.Printf("Publishing message: %s", string(data))
+	ch, err := channel()
+	if err != nil {
+		return err
+	}
+	return ch.Publish(
+		"",        // exchange
+		queueName, // routing key
+		false,     // mandatory
+		false,     // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        []byte(data),
+		})
+}
+
+func Consume(queueName string,
+	newContentStruct func() interface{},
+	processContent func(interface{}) error,
+	errChan chan error,
+	doneChan chan bool) error {
+	ch, err := channel()
+	if err != nil {
+		return err
+	}
+	msgs, err := ch.Consume(
+		queueName, // queue
+		"",        // consumer
+		false,     // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
+	)
+	select {
+	case msg := <-msgs:
+		log.Printf("Received message: %s", string(msg.Body))
+		content := newContentStruct()
+		err := json.Unmarshal(msg.Body, content)
+		if err != nil {
+			log.Printf("Error unmarshaling message content: %s", err)
+			break
+		}
+		err = processContent(content)
+		if err != nil {
+			log.Printf("Error prcessing content of message: %s", err)
+			errChan <- err
+		}
+		msg.Ack(false)
+	case <-doneChan:
+		return nil
+	}
+	return nil
+}
+
 func init() {
-	addr = os.Getenv("MSG_SERVER_URL")
+	addr := os.Getenv("MSG_SERVER_URL")
 	if addr == "" {
 		addr = "amqp://guest:guest@localhost:5672/"
+	}
+}
+
+func declareQueue(name string) (*amqp.Queue, error) {
+	ch, err := channel()
+	if err != nil {
+		return nil, err
+	}
+	q, err := ch.QueueDeclare(
+		name,  // name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &q, nil
+}
+
+func closeChannel() {
+	channMutex.Lock()
+	defer channMutex.Unlock()
+	if chann != nil {
+		chann.Close()
+		chann = nil
+	}
+}
+
+func closeConnection() {
+	connMutex.Lock()
+	defer connMutex.Unlock()
+	if conn != nil {
+		conn.Close()
+		conn = nil
 	}
 }
 
@@ -55,117 +151,14 @@ func channel() (*amqp.Channel, error) {
 	return chann, nil
 }
 
-type Publisher struct {
-	Pub *cony.Publisher
-}
-
-func (p *Publisher) Publish(content interface{}) error {
-	data, err := json.Marshal(content)
-	if err != nil {
-		return err
-	}
-	log.Printf("Publishing message: %s", string(data))
-	return p.Pub.Publish(amqp.Publishing{
-		Body:            data,
-		ContentType:     "application/json",
-		ContentEncoding: "utf-8",
-	})
-}
-
-type Consumer struct {
-	Cns *cony.Consumer
-}
-
-func (c *Consumer) Consume(newContentStruct func() interface{}, processContent func(interface{}) error, done chan bool) {
-	for client.Loop() {
-		log.Println("Starting consumer loop")
-		select {
-		case msg := <-c.Cns.Deliveries():
-			log.Printf("Received message: %s", string(msg.Body))
-			content := newContentStruct()
-			err := json.Unmarshal(msg.Body, content)
-			if err != nil {
-				log.Printf("Error unmarshaling message content: %s", err)
-				break
-			}
-			err = processContent(content)
-			if err != nil {
-				log.Printf("Error prcessing content of message: %s", err)
-				// TODO: Put in error queue
-			}
-			msg.Ack(false)
-		case err := <-c.Cns.Errors():
-			log.Printf("Consumer error: %v\n", err)
-		case err := <-client.Errors():
-			log.Printf("Client error: %v\n", err)
-		case <-done:
-			return
-		}
-	}
-}
-
 func init() {
-	addr := os.Getenv("MSG_SERVER_URL")
+	addr = os.Getenv("MSG_SERVER_URL")
 	if addr == "" {
 		addr = "amqp://guest:guest@localhost:5672/"
 	}
-	client = cony.NewClient(
-		cony.URL(addr),
-		cony.Backoff(cony.DefaultBackoff),
-	)
-}
-
-func declareQueue(name string) *cony.Queue {
-	que := &cony.Queue{
-		Name:       name,
-		AutoDelete: false,
-		Durable:    true,
-	}
-	exc := cony.Exchange{
-		Name:       name,
-		Kind:       "direct",
-		AutoDelete: false,
-		Durable:    true,
-	}
-	bnd := cony.Binding{
-		Queue:    que,
-		Exchange: exc,
-		Key:      "",
-	}
-	client.Declare([]cony.Declaration{
-		cony.DeclareQueue(que),
-		cony.DeclareExchange(exc),
-		cony.DeclareBinding(bnd),
-	})
-	return que
-}
-
-func NewPublisher(name string) *Publisher {
-	declareQueue(name)
-	publisher := cony.NewPublisher(name, "")
-	client.Publish(publisher)
-	return &Publisher{Pub: publisher}
-}
-
-func NewConsumer(name string) *Consumer {
-	que := declareQueue(name)
-	cns := cony.NewConsumer(que)
-	client.Consume(cns)
-	return &Consumer{Cns: cns}
-}
-
-func Connect() {
-	log.Printf("Starting connection loop")
-	go func() {
-		for client.Loop() {
-			select {
-			case err := <-client.Errors():
-				log.Printf("Reconnecting to RabbitMQ after error: %s", err)
-			}
-		}
-	}()
 }
 
 func Close() {
-	client.Close()
+	closeChannel()
+	closeConnection()
 }

@@ -1,4 +1,4 @@
-package definition
+package process
 
 type ProcessDef struct {
 	Description string           `json:"description,omitempty"`

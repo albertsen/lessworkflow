@@ -10,7 +10,6 @@ import (
 
 	doc "github.com/albertsen/lessworkflow/pkg/data/document"
 	"github.com/albertsen/lessworkflow/pkg/data/process"
-	pe "github.com/albertsen/lessworkflow/pkg/data/processexec"
 	"github.com/albertsen/lessworkflow/pkg/db/repo"
 	"github.com/albertsen/lessworkflow/pkg/msg"
 	uuid "github.com/satori/go.uuid"
@@ -90,27 +89,25 @@ func StartProcess(w http.ResponseWriter, r *http.Request) {
 		processID = uuid.String()
 	}
 	process.ID = processID
-	wfStep := pe.Step{
-		ProcessID: processID,
-	}
 	processDefChan := make(chan result)
 	docChan := make(chan result)
 	// Make two parallel calls to the document service
 	go getDocument(process.ProcessDefURL, processDefChan)
 	go getDocument(process.DocumentURL, docChan)
+	var processDefDoc *doc.Document
+	var payloadDoc *doc.Document
 	errorMessages := make([]string, 0)
 	for i := 0; i < 2; i++ {
 		select {
 		case processDefRes := <-processDefChan:
 			if !processDefRes.IsError() {
-				wfStep.ProcessDef = processDefRes.Document
-				wfStep.Name = "start"
+				processDefDoc = processDefRes.Document
 			} else {
 				errorMessages = append(errorMessages, processDefRes.Error())
 			}
 		case docRes := <-docChan:
 			if !docRes.IsError() {
-				wfStep.Document = docRes.Document
+				payloadDoc = docRes.Document
 			} else {
 				errorMessages = append(errorMessages, docRes.Error())
 			}
