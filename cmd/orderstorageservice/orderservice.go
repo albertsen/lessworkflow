@@ -17,10 +17,10 @@ import (
 
 func main() {
 	router := mux.NewRouter()
-	router.HandleFunc("/documents/{type}", CreateDocument).Methods("POST")
-	router.HandleFunc("/documents/{type}/{id}", GetDocument).Methods("GET")
-	router.HandleFunc("/documents/{type}/{id}", UpdateDocument).Methods("PUT")
-	router.HandleFunc("/documents/{type}/{id}", DeleteDocument).Methods("DELETE")
+	router.HandleFunc("/orders/{type}", CreateDocument).Methods("POST")
+	router.HandleFunc("/orders/{type}/{id}", GetDocument).Methods("GET")
+	router.HandleFunc("/orders/{type}/{id}", UpdateDocument).Methods("PUT")
+	router.HandleFunc("/orders/{type}/{id}", DeleteDocument).Methods("DELETE")
 	repo.Connect()
 	defer repo.Close()
 	addr := os.Getenv("LISTEN_ADDR")
