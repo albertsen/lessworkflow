@@ -4,44 +4,44 @@ services:
     image: gcr.io/sap-se-commerce-arch/documentservice:latest
     restart: always
     environment:
-      - DB_SERVER_ADDR=postgres:5432
+      - DB_URL=mongodb://mongo:27017
       - LISTEN_ADDR=:80
     ports:
       - "8000:80"
     depends_on: 
-      - postgres
-  processservice:
-    image: gcr.io/sap-se-commerce-arch/processservice:latest
-    restart: always
-    environment:
-      - DB_SERVER_ADDR=postgres:5432
-      - DOCUMENTSERVICE_URL=http://documentservice
-      - MSG_SERVER_URL=amqp://guest:guest@rabbitmq:5672/
-      - LISTEN_ADDR=:80
-    ports:
-      - "8001:80"
-    depends_on: 
-      - documentservice
-      - rabbitmq
-  processengine:
-    image: gcr.io/sap-se-commerce-arch/processengine:latest
-    restart: always
-    environment:
-      - MSG_SERVER_URL=amqp://guest:guest@rabbitmq:5672/
-    depends_on: 
-      - rabbitmq
-  rabbitmq:
-    image: rabbitmq:latest
+      - mongo
+  # processservice:
+  #   image: gcr.io/sap-se-commerce-arch/processservice:latest
+  #   restart: always
+  #   environment:
+  #     - DB_SERVER_ADDR=postgres:5432
+  #     - DOCUMENTSERVICE_URL=http://documentservice
+  #     - MSG_SERVER_URL=amqp://guest:guest@rabbitmq:5672/
+  #     - LISTEN_ADDR=:80
+  #   ports:
+  #     - "8001:80"
+  #   depends_on: 
+  #     - documentservice
+  #     - rabbitmq
+  # processengine:
+  #   image: gcr.io/sap-se-commerce-arch/processengine:latest
+  #   restart: always
+  #   environment:
+  #     - MSG_SERVER_URL=amqp://guest:guest@rabbitmq:5672/
+  #   depends_on: 
+  #     - rabbitmq
+  # rabbitmq:
+  #   image: rabbitmq:latest
+  #   restart: always
+  #   volumes:
+  #     - /private/var/lib/rabbitmq:/var/lib/rabbitmq
+  #   ports:
+  #     - "5673:5673"
+  #     - "15672:15672"      
+  mongo:
+    image: mongo:latest
     restart: always
     volumes:
-      - /private/var/lib/rabbitmq:/var/lib/rabbitmq
+      - /private/var/lib/mongo:/data/db
     ports:
-      - "5673:5673"
-      - "15672:15672"      
-  postgres:
-    image: postgres:latest
-    restart: always
-    volumes:
-      - /private/var/lib/postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - "27017:27017"

@@ -20,7 +20,7 @@ PSQL=psql -h localhost -p $(PSQL_PORT)
 DB_NAME=lessworkflow
 
 
-build: documentservice processservice processengine
+build: documentservice
 
 documentservice:
 	$(GOBUILD) -o $(BUILD_DIR)/documentservice -v $(PKGPATH)/cmd/documentservice
@@ -31,19 +31,9 @@ processengine:
 
 
 load-sample-data:
-	curl --header "Content-Type: application/json" -v -d @./data/sample/order.json http://localhost:8000/documents/orders
-	curl --header "Content-Type: application/json" -v -d @./data/sample/processdef.json http://localhost:8000/documents/processdefs
+	curl --header "Content-Type: application/json" -v -d @./data/sample/order.json http://localhost:5984/orders
+	curl --header "Content-Type: application/json" -v -d @./data/sample/processdef.json http://localhost:5984/processdefs
 
-createdb:
-	$(PSQL) -U postgres postgres -f sql/create_database.sql 
-	$(PSQL) -U postgres $(DB_NAME) -f sql/create_users.sql
-	$(PSQL) -U lwadmin $(DB_NAME) -f sql/create_tables.sql
-
-dropdb:
-	$(PSQL) -U postgres postgres -c "DROP DATABASE lessworkflow"
-
-cleardb:
-	$(PSQL) -U postgres lessworkflow -f sql/clear_database.sql 
 
 test: cleardb test-documentservice test-processservice
 
@@ -66,8 +56,6 @@ build-linux: build
 
 docker: build-linux
 	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/documentservice:latest -f infra/docker/documentservice/Dockerfile .
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processservice:latest -f infra/docker/processservice/Dockerfile .
-	$(DOCKER) build -t gcr.io/sap-se-commerce-arch/processengine:latest -f infra/docker/processengine/Dockerfile .
 
 docker-start: docker
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) up --remove-orphans
@@ -76,14 +64,13 @@ docker-stop:
 	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) down
 
 restart-services: docker
-	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice processservice processengine && \
-		$(DOCKER_COMPOSE) up --no-deps -d documentservice processservice processengine
+	cd $(DOCKER_DIR) && $(DOCKER_COMPOSE) stop documentservice && \
+		$(DOCKER_COMPOSE) up --no-deps -d documentservice
 
 setup:
-	go get -u github.com/go-pg/pg \
+	go get -u github.com/mongodb/mongo-go-driver/mongo \
 		github.com/gorilla/mux \
 		github.com/satori/go.uuid \
 		github.com/google/go-cmp/cmp \
 		gotest.tools/assert \
-		github.com/streadway/amqp \
-		github.com/assembla/cony
+		github.com/streadway/amqp
