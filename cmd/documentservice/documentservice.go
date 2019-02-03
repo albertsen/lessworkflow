@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -23,27 +22,22 @@ var (
 )
 
 type RestHandler struct {
-	Handler func(doc map[string]interface{}, params map[string]string) *RestResponse
+	Handler         func(doc interface{}, params map[string]string) *RestResponse
+	DocumentFactory func() interface{}
 }
 
 func (rh *RestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var v interface{}
-	if err := json.NewDecoder(r.Body).Decode(&v); err != nil {
-		switch {
-		case err == io.EOF:
-			log.Println("EOF error")
-			v = make(map[string]string)
-		case err != nil:
+	var doc interface{}
+	if rh.DocumentFactory != nil {
+		doc = rh.DocumentFactory()
+		if err := json.NewDecoder(r.Body).Decode(&doc); err != nil {
 			server.SendError(w, http.StatusUnprocessableEntity, err)
 			return
 		}
 	}
-	doc, ok := v.(map[string]interface{})
-	if !ok {
-		server.SendError(w, http.StatusInternalServerError, "Cannot convert JSON document to map")
-	}
 	res := rh.Handler(doc, mux.Vars(r))
 	server.SendResponse(w, res.StatusCode, res.Body)
+
 }
 
 type RestResponse struct {
@@ -53,7 +47,7 @@ type RestResponse struct {
 }
 
 type RestError struct {
-	Message string
+	Message string `json:"message"`
 }
 
 func NewErrorRestResponse(statusCode int, message interface{}) *RestResponse {
@@ -65,17 +59,31 @@ func NewErrorRestResponse(statusCode int, message interface{}) *RestResponse {
 	}
 }
 
-func Handle(path string, handleFunc func(map[string]interface{}, map[string]string) *RestResponse, methods string) {
-	router.Handle(path, &RestHandler{
-		Handler: CreateDocument,
-	}).Methods(methods)
+func MapFactory() interface{} {
+	return make(map[string]interface{})
+}
+
+func Handle(path string,
+	handleFunc func(interface{}, map[string]string) *RestResponse,
+	docFactory func() interface{}) *mux.Route {
+	return router.Handle(path, &RestHandler{
+		Handler:         handleFunc,
+		DocumentFactory: docFactory,
+	})
 }
 
 func DBCollection(collection string) *mongo.Collection {
 	return dbClient.Database(dbName).Collection(collection)
 }
 
-func CreateDocument(doc map[string]interface{}, params map[string]string) *RestResponse {
+func CreateDocument(v interface{}, params map[string]string) *RestResponse {
+	if v == nil {
+		return NewErrorRestResponse(http.StatusUnprocessableEntity, "Cannot create empty document")
+	}
+	doc, ok := v.(map[string]interface{})
+	if !ok {
+		return NewErrorRestResponse(http.StatusUnprocessableEntity, "Cannot convert document to map")
+	}
 	now := time.Now()
 	doc["timeCreated"] = &now
 	doc["timeUpdated"] = &now
@@ -92,7 +100,14 @@ func CreateDocument(doc map[string]interface{}, params map[string]string) *RestR
 	}
 }
 
-func UpdateDocument(doc map[string]interface{}, params map[string]string) *RestResponse {
+func UpdateDocument(v interface{}, params map[string]string) *RestResponse {
+	if v == nil {
+		return NewErrorRestResponse(http.StatusUnprocessableEntity, "Cannot update with empty document")
+	}
+	doc, ok := v.(map[string]interface{})
+	if !ok {
+		return NewErrorRestResponse(http.StatusUnprocessableEntity, "Cannot convert document to map")
+	}
 	now := time.Now()
 	doc["timeUpdated"] = &now
 	resource := params["resource"]
@@ -102,12 +117,12 @@ func UpdateDocument(doc map[string]interface{}, params map[string]string) *RestR
 	}
 	res := DBCollection(resource).FindOneAndReplace(context.Background(), bson.M{"_id": id}, doc)
 	if res.Err() != nil {
-		return NewErrorRestResponse(http.StatusInternalServerError, res.Err)
+		return NewErrorRestResponse(http.StatusInternalServerError, res.Err())
 	}
 	var updatedDoc interface{}
 	err := res.Decode(&updatedDoc)
 	if err != nil {
-		return NewErrorRestResponse(http.StatusInternalServerError, res.Err)
+		return NewErrorRestResponse(http.StatusInternalServerError, res.Err())
 	}
 	return &RestResponse{
 		StatusCode: http.StatusOK,
@@ -115,17 +130,17 @@ func UpdateDocument(doc map[string]interface{}, params map[string]string) *RestR
 	}
 }
 
-func GetDocument(doc map[string]interface{}, params map[string]string) *RestResponse {
+func GetDocument(doc interface{}, params map[string]string) *RestResponse {
 	resource := params["resource"]
 	id := params["id"]
 	res := DBCollection(resource).FindOne(context.Background(), bson.M{"_id": id})
 	if res.Err() != nil {
-		return NewErrorRestResponse(http.StatusInternalServerError, res.Err)
+		return NewErrorRestResponse(http.StatusInternalServerError, res.Err())
 	}
 	var dbDoc interface{}
 	err := res.Decode(&dbDoc)
 	if err != nil {
-		return NewErrorRestResponse(http.StatusInternalServerError, res.Err)
+		return NewErrorRestResponse(http.StatusInternalServerError, err)
 	}
 	return &RestResponse{
 		StatusCode: http.StatusOK,
@@ -133,7 +148,7 @@ func GetDocument(doc map[string]interface{}, params map[string]string) *RestResp
 	}
 }
 
-func DeleteDocument(doc map[string]interface{}, params map[string]string) *RestResponse {
+func DeleteDocument(doc interface{}, params map[string]string) *RestResponse {
 	resource := params["resource"]
 	id := params["id"]
 	res, err := DBCollection(resource).DeleteOne(context.Background(), bson.M{"_id": id})
@@ -159,10 +174,22 @@ func main() {
 	}
 	defer mc.Disconnect(context.Background())
 	dbClient = mc
-	Handle("/{resource}", CreateDocument, "POST")
-	Handle("/{resource}/{id}", GetDocument, "GET")
-	Handle("/{resource}/{id}", UpdateDocument, "PUT")
-	Handle("/{resource}/{id}", DeleteDocument, "DELETE")
+	router.Handle(
+		"/{resource}",
+		&RestHandler{Handler: CreateDocument, DocumentFactory: MapFactory},
+	).Methods("POST")
+	router.Handle(
+		"/{resource}/{id}",
+		&RestHandler{Handler: UpdateDocument, DocumentFactory: MapFactory},
+	).Methods("PUT")
+	router.Handle(
+		"/{resource}/{id}",
+		&RestHandler{Handler: GetDocument},
+	).Methods("GET")
+	router.Handle(
+		"/{resource}/{id}",
+		&RestHandler{Handler: CreateDocument},
+	).Methods("DELETE")
 	listenAddr := utils.Getenv("LISTEN_ADDR", ":8080")
 	log.Printf("documentservice listening on %s", listenAddr)
 	log.Fatal(http.ListenAndServe(listenAddr, router))

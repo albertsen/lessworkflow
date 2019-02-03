@@ -35,7 +35,7 @@ load-sample-data:
 	curl --header "Content-Type: application/json" -v -d @./data/sample/processdef.json http://localhost:5984/processdefs
 
 
-test: cleardb test-documentservice test-processservice
+test: cleardb test-documentservice # test-processservice
 
 test-documentservice:
 	$(GOTEST) $(PKGPATH)/cmd/documentservice

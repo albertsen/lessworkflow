@@ -17,9 +17,9 @@ var (
 )
 
 type Response struct {
-	StatusCode int
-	Message    string
-	Body       []byte
+	StatusCode int    `json:"statusCode"`
+	Message    string `json:"message"`
+	Body       []byte `jsom:"Body"`
 }
 
 func (r *Response) String() string {
@@ -82,6 +82,7 @@ func PerformRequest(method string, url string, requestBody interface{}, response
 	}
 	if res.StatusCode != expectedStatusCode {
 		var response Response
+		fmt.Printf("Response: [%s]", data)
 		json.Unmarshal(data, &response)
 		// We're ignoring the error because the server might have return
 		// an unparsable error message, e.g. in HTML.

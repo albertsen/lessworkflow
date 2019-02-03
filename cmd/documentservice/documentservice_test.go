@@ -27,7 +27,7 @@ func TestCRUD(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	assert.Equal(t, res.StatusCode, http.StatusCreated, "HTTP status should be CREATED")
+	assert.Equal(t, res.StatusCode, http.StatusCreated, res.Message)
 	assert.Assert(t, createdOrder.ID != "", "In created document, ID should not be empty")
 	assert.Assert(t, createdOrder.TimeCreated != nil, "In created document, TimeCreated should not be nil")
 	assert.Assert(t, createdOrder.TimeUpdated != nil, "In created document, TimeUpdated should not be nil")
